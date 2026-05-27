@@ -564,6 +564,12 @@ optgroup {
   background: linear-gradient(180deg, #fff, #eef3fb);
 }
 
+.thumb-dialoghi2,
+.thumb-dialoghi3,
+.thumb-dialoghi6 {
+  background: linear-gradient(180deg, #fff, #eef3fb);
+}
+
 .thumbMobileFrame {
   position: absolute;
   left: 50%;
@@ -760,7 +766,10 @@ optgroup {
 .thumbnail:not(.isActive) .thumb-fashionFemaleBack,
 .thumbnail:not(.isActive) .thumb-fashionChildUnisex,
 .thumbnail:not(.isActive) .thumb-fashionGrid9,
-.thumbnail:not(.isActive) .thumb-dialoghi {
+.thumbnail:not(.isActive) .thumb-dialoghi,
+.thumbnail:not(.isActive) .thumb-dialoghi2,
+.thumbnail:not(.isActive) .thumb-dialoghi3,
+.thumbnail:not(.isActive) .thumb-dialoghi6 {
   background: #ffffff !important;
   background-image: none !important;
 }
@@ -805,7 +814,10 @@ optgroup {
 .thumb-fashionFemaleBack,
 .thumb-fashionChildUnisex,
 .thumb-fashionGrid9,
-.thumb-dialoghi {
+.thumb-dialoghi,
+.thumb-dialoghi2,
+.thumb-dialoghi3,
+.thumb-dialoghi6 {
   background: #ffffff !important;
   background-image: none !important;
 }

@@ -16,6 +16,13 @@ import {
 } from './templates/config'
 import { drawTemplateOnPdf } from './templates/pdf/drawTemplateOnPdf'
 
+const dialoghiRowCounts: Partial<Record<TemplateKey, number>> = {
+  dialoghi2: 2,
+  dialoghi3: 3,
+  dialoghi: 4,
+  dialoghi6: 6,
+}
+
 type PageSizeKey = 'A4' | 'A5'
 type Orientation = 'portrait' | 'landscape'
 type BindingKey = 'none' | 'ringLeft' | 'ringTop' | 'booklet'
@@ -1583,36 +1590,126 @@ function App() {
             </g>
           )}
 
-          {activeTemplate === 'dialoghi' && (
+          {dialoghiRowCounts[activeTemplate] && (
             <g stroke="#8c919c" fill="#f7f9fc" strokeWidth="0.45">
               {(() => {
-                const gap = 8
-                const sidePadding = 6
-                const topPadding = 8
-                const bottomPadding = 8
-                const availableHeight =
-                  previewContent.height - topPadding - bottomPadding - gap
-                const blockHeight = availableHeight / 2
-                const blockWidth = previewContent.width - sidePadding * 2
-                const topY = previewContent.y + topPadding
-                const bottomY = topY + blockHeight + gap
+                const rowCount = dialoghiRowCounts[activeTemplate] ?? 4
+                const outerPaddingX = 5
+                const outerPaddingY = 7
+                const rowGap = 6
+                const rowHeight =
+                  (previewContent.height - outerPaddingY * 2 - rowGap * (rowCount - 1)) /
+                  rowCount
+                const actorWidth = 34
+                const actorPadding = 2.5
+                const balloonGap = 4
 
                 return (
                   <>
-                    <rect
-                      x={previewContent.x + sidePadding}
-                      y={topY}
-                      width={blockWidth}
-                      height={blockHeight}
-                      rx="2"
-                    />
-                    <rect
-                      x={previewContent.x + sidePadding}
-                      y={bottomY}
-                      width={blockWidth}
-                      height={blockHeight}
-                      rx="2"
-                    />
+                    {Array.from({ length: rowCount }, (_, i) => {
+                      const rowY = previewContent.y + outerPaddingY + i * (rowHeight + rowGap)
+                      const alignRight = i % 2 === 1
+                      const actorX = alignRight
+                        ? previewContent.x + previewContent.width - outerPaddingX - actorWidth
+                        : previewContent.x + outerPaddingX
+                      const balloonX = alignRight
+                        ? previewContent.x + outerPaddingX
+                        : actorX + actorWidth + balloonGap
+                      const balloonWidth =
+                        previewContent.width - outerPaddingX * 2 - actorWidth - balloonGap
+                      const balloonY = rowY + actorPadding
+                      const balloonHeight = rowHeight - actorPadding * 2 - 2
+                      const centerX = actorX + actorWidth / 2
+                      const headCenterY = rowY + 8
+                      const shoulderY = rowY + 18
+                      const nameLineY = rowY + 25
+                      const descriptionStartY = nameLineY + 7.5
+                      const tailMidY = balloonY + 8.5
+                      const topJoinY = tailMidY - 2.6
+                      const bottomJoinY = tailMidY + 2.6
+                      const writingStartY = balloonY + 8
+                      const radius = 2.2
+                      const localTailY = tailMidY + 3 - balloonY
+                      const localTopJoinY = topJoinY - balloonY
+                      const localBottomJoinY = bottomJoinY - balloonY
+                      const balloonPath = alignRight
+                        ? [
+                            `M ${radius} 0`,
+                            `H ${balloonWidth - radius}`,
+                            `Q ${balloonWidth} 0 ${balloonWidth} ${radius}`,
+                            `V ${localTopJoinY}`,
+                            `L ${balloonWidth + 6} ${localTailY}`,
+                            `L ${balloonWidth} ${localBottomJoinY}`,
+                            `V ${balloonHeight - radius}`,
+                            `Q ${balloonWidth} ${balloonHeight} ${balloonWidth - radius} ${balloonHeight}`,
+                            `H ${radius}`,
+                            `Q 0 ${balloonHeight} 0 ${balloonHeight - radius}`,
+                            `V ${radius}`,
+                            `Q 0 0 ${radius} 0`,
+                            'Z',
+                          ].join(' ')
+                        : [
+                            `M ${radius} 0`,
+                            `H ${balloonWidth - radius}`,
+                            `Q ${balloonWidth} 0 ${balloonWidth} ${radius}`,
+                            `V ${balloonHeight - radius}`,
+                            `Q ${balloonWidth} ${balloonHeight} ${balloonWidth - radius} ${balloonHeight}`,
+                            `H ${radius}`,
+                            `Q 0 ${balloonHeight} 0 ${balloonHeight - radius}`,
+                            `V ${localBottomJoinY}`,
+                            `L -6 ${localTailY}`,
+                            `L 0 ${localTopJoinY}`,
+                            `V ${radius}`,
+                            `Q 0 0 ${radius} 0`,
+                            'Z',
+                          ].join(' ')
+
+                      return (
+                        <g key={`dialog-row-${i}`}>
+                          <circle cx={centerX} cy={headCenterY} r="5.2" fill="none" />
+                          <path
+                            d={`M ${centerX - 11} ${shoulderY} Q ${centerX} ${shoulderY - 5} ${centerX + 11} ${shoulderY}`}
+                            fill="none"
+                          />
+                          <line
+                            x1={actorX + 2}
+                            y1={nameLineY}
+                            x2={actorX + actorWidth - 2}
+                            y2={nameLineY}
+                          />
+                          {Array.from({ length: 5 }, (_, lineIndex) => (
+                            <line
+                              key={`dialog-desc-${i}-${lineIndex}`}
+                              x1={actorX + 2}
+                              y1={descriptionStartY + lineIndex * 3.9}
+                              x2={actorX + actorWidth - 2}
+                              y2={descriptionStartY + lineIndex * 3.9}
+                              strokeWidth="0.18"
+                            />
+                          ))}
+                          <path
+                            d={balloonPath}
+                            transform={`translate(${balloonX} ${balloonY})`}
+                          />
+                          {Array.from({ length: 8 }, (_, lineIndex) => {
+                            const lineY = writingStartY + lineIndex * 5.2
+                            if (lineY >= balloonY + balloonHeight - 3) {
+                              return null
+                            }
+                            return (
+                              <line
+                                key={`dialog-write-${i}-${lineIndex}`}
+                                x1={balloonX + 4}
+                                y1={lineY}
+                                x2={balloonX + balloonWidth - 4}
+                                y2={lineY}
+                                strokeWidth="0.18"
+                              />
+                            )
+                          })}
+                        </g>
+                      )
+                    })}
                   </>
                 )
               })()}
@@ -1877,8 +1974,19 @@ function App() {
                         {item.template === 'fashionGrid9' && (
                           <span className="thumbUi">9H</span>
                         )}
-                        {item.template === 'dialoghi' && (
-                          <span className="thumbUi">DIA</span>
+                        {(item.template === 'dialoghi2' ||
+                          item.template === 'dialoghi3' ||
+                          item.template === 'dialoghi' ||
+                          item.template === 'dialoghi6') && (
+                          <span className="thumbUi">
+                            {item.template === 'dialoghi2'
+                              ? 'DIA2'
+                              : item.template === 'dialoghi3'
+                                ? 'DIA3'
+                                : item.template === 'dialoghi6'
+                                  ? 'DIA6'
+                                  : 'DIA4'}
+                          </span>
                         )}
                         {item.template === 'storyboard' && (
                           <span className="thumbUi">STB</span>
