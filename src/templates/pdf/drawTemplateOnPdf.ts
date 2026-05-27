@@ -2,10 +2,15 @@ import type { PDFPage } from 'pdf-lib'
 import type { MmRect, TemplateKey } from '../types'
 import { drawBasicTemplatePdf } from './basic'
 import { drawFashionTemplatePdf } from './fashion'
-import { drawScenographyTemplatePdf } from './scenography'
+import { drawScenographyTemplatePdf, type ScenographyRenderOptions } from './scenography'
 import { drawUiTemplatePdf } from './ui'
 
-export function drawTemplateOnPdf(page: PDFPage, template: TemplateKey, rect: MmRect): void {
+export function drawTemplateOnPdf(
+  page: PDFPage,
+  template: TemplateKey,
+  rect: MmRect,
+  options?: ScenographyRenderOptions,
+): void {
   if (
     template === 'blank' ||
     template === 'dots' ||
@@ -34,9 +39,10 @@ export function drawTemplateOnPdf(page: PDFPage, template: TemplateKey, rect: Mm
     template === 'dialoghi3' ||
     template === 'dialoghi' ||
     template === 'dialoghi6' ||
+    template === 'dialoghiParametric' ||
     template === 'storyboard'
   ) {
-    drawScenographyTemplatePdf(page, template, rect)
+    drawScenographyTemplatePdf(page, template, rect, options)
     return
   }
 

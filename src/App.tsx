@@ -78,6 +78,24 @@ const elementIconLabels: Record<ElementKind, { iconClass: string; title: string 
   form: { iconClass: 'fa-solid fa-clipboard-list', title: 'Aggiungi form' },
 }
 
+const dialoghiParametricDefaultColors = [
+  '#e76f51',
+  '#2a9d8f',
+  '#457b9d',
+  '#f4a261',
+  '#8d99ae',
+  '#90be6d',
+  '#b56576',
+  '#577590',
+]
+
+function buildDialoghiParametricColors(actorCount: number, existing: string[] = []): string[] {
+  const safeCount = Math.min(8, Math.max(2, actorCount))
+  return Array.from({ length: safeCount }, (_, index) =>
+    existing[index] ?? dialoghiParametricDefaultColors[index % dialoghiParametricDefaultColors.length],
+  )
+}
+
 function mmToPt(mm: number): number {
   return mm * MM_TO_PT
 }
@@ -473,6 +491,7 @@ async function exportPdf(options: {
   duplexEnabled: boolean
   header: HeaderFooterOptions
   footer: HeaderFooterOptions
+  dialoghiParametricActors: { color: string }[]
 }) {
   const pdf = await PDFDocument.create()
   const imageCache = new Map<string, import('pdf-lib').PDFImage>()
@@ -494,7 +513,9 @@ async function exportPdf(options: {
     const margins = getMargins(options.binding, pageIndex, totalPages, options.duplexEnabled)
     const content = getContentRect(dimensions.width, dimensions.height, margins)
 
-    drawTemplateOnPdf(page, currentTemplate, content)
+    drawTemplateOnPdf(page, currentTemplate, content, {
+      dialoghiParametricActors: options.dialoghiParametricActors,
+    })
     drawBindingGuides(
       page,
       options.binding,
@@ -752,6 +773,9 @@ function App() {
     includePageNumber: false,
     align: 'right',
   })
+  const [dialoghiParametricActorCount, setDialoghiParametricActorCount] = useState(3)
+  const [dialoghiParametricActorColors, setDialoghiParametricActorColors] =
+    useState<string[]>(() => buildDialoghiParametricColors(3))
   const [customElementsByPage, setCustomElementsByPage] = useState<Record<string, CustomElement[]>>({})
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [dragState, setDragState] = useState<DragState | null>(null)
@@ -798,6 +822,14 @@ function App() {
     compositionEnabled && compositionPages.length > 0
       ? compositionPages[previewPageIndex]?.template ?? template
       : template
+  const dialoghiParametricActors = useMemo(
+    () =>
+      buildDialoghiParametricColors(
+        dialoghiParametricActorCount,
+        dialoghiParametricActorColors,
+      ).map((color) => ({ color })),
+    [dialoghiParametricActorColors, dialoghiParametricActorCount],
+  )
 
   const previewMargins = useMemo(
     () => getMargins(binding, previewPageIndex, totalPages, duplexEnabled),
@@ -812,6 +844,20 @@ function App() {
   const previewScale = maxPreviewWidth / page.width
   const previewWidth = page.width * previewScale
   const previewHeight = page.height * previewScale
+
+  function setDialoghiParametricActorsCount(nextCountRaw: number) {
+    const nextCount = Math.min(8, Math.max(2, Math.round(nextCountRaw) || 2))
+    setDialoghiParametricActorCount(nextCount)
+    setDialoghiParametricActorColors((prev) => buildDialoghiParametricColors(nextCount, prev))
+  }
+
+  function setDialoghiParametricActorColor(index: number, color: string) {
+    setDialoghiParametricActorColors((prev) => {
+      const next = buildDialoghiParametricColors(dialoghiParametricActorCount, prev)
+      next[index] = color
+      return next
+    })
+  }
 
   function toggleComposition() {
     setCompositionEnabled((prev) => {
@@ -1238,6 +1284,40 @@ function App() {
           </div>
         )}
 
+        {activeTemplate === 'dialoghiParametric' && (
+          <div className="group groupedBox">
+            <label className="groupTitle">Dialoghi Parametrico</label>
+
+            <label htmlFor="dialoghiParametricActors">Numero attori</label>
+            <input
+              id="dialoghiParametricActors"
+              type="number"
+              min={2}
+              max={8}
+              value={dialoghiParametricActorCount}
+              onChange={(event) =>
+                setDialoghiParametricActorsCount(Number(event.target.value) || 2)
+              }
+            />
+
+            {dialoghiParametricActors.map((actor, actorIndex) => (
+              <div key={`actor-color-${actorIndex}`} className="actorColorRow">
+                <label htmlFor={`actorColor${actorIndex}`}>Attore {actorIndex + 1}</label>
+                <input
+                  id={`actorColor${actorIndex}`}
+                  type="color"
+                  value={actor.color}
+                  onChange={(event) =>
+                    setDialoghiParametricActorColor(actorIndex, event.target.value)
+                  }
+                />
+              </div>
+            ))}
+
+            <p className="hint">Ordine ciclico automatico: A1, A2, ... fino a riempire la pagina.</p>
+          </div>
+        )}
+
         <div className="group groupedBox">
           <label className="groupTitle">Header / Footer</label>
 
@@ -1344,6 +1424,7 @@ function App() {
               duplexEnabled,
               header: headerOptions,
               footer: footerOptions,
+              dialoghiParametricActors,
             })
           }
         >
@@ -1590,10 +1671,16 @@ function App() {
             </g>
           )}
 
-          {dialoghiRowCounts[activeTemplate] && (
+          {(dialoghiRowCounts[activeTemplate] || activeTemplate === 'dialoghiParametric') && (
             <g stroke="#8c919c" fill="#f7f9fc" strokeWidth="0.45">
               {(() => {
-                const rowCount = dialoghiRowCounts[activeTemplate] ?? 4
+                const isParametric = activeTemplate === 'dialoghiParametric'
+                const rowCount = isParametric
+                  ? Math.max(
+                      2,
+                      Math.floor((previewContent.height - 14 + 6) / (28 + 6)),
+                    )
+                  : (dialoghiRowCounts[activeTemplate] ?? 4)
                 const outerPaddingX = 5
                 const outerPaddingY = 7
                 const rowGap = 6
@@ -1603,6 +1690,7 @@ function App() {
                 const actorWidth = 34
                 const actorPadding = 2.5
                 const balloonGap = 4
+                const actorColors = dialoghiParametricActors.map((actor) => actor.color)
 
                 return (
                   <>
@@ -1624,6 +1712,8 @@ function App() {
                       const shoulderY = rowY + 18
                       const nameLineY = rowY + 25
                       const descriptionStartY = nameLineY + 7.5
+                      const nameStartX = actorX + (isParametric ? 8 : 2)
+                      const actorColor = actorColors[i % Math.max(1, actorColors.length)]
                       const tailMidY = balloonY + 8.5
                       const topJoinY = tailMidY - 2.6
                       const bottomJoinY = tailMidY + 2.6
@@ -1666,13 +1756,35 @@ function App() {
 
                       return (
                         <g key={`dialog-row-${i}`}>
+                          {isParametric && (
+                            <rect
+                              x={actorX + 1}
+                              y={rowY + 4.5}
+                              width={actorWidth - 2}
+                              height={16}
+                              rx="3.5"
+                              fill={actorColor}
+                              fillOpacity="0.25"
+                              stroke="none"
+                            />
+                          )}
                           <circle cx={centerX} cy={headCenterY} r="5.2" fill="none" />
                           <path
                             d={`M ${centerX - 11} ${shoulderY} Q ${centerX} ${shoulderY - 5} ${centerX + 11} ${shoulderY}`}
                             fill="none"
                           />
+                          {isParametric && (
+                            <circle
+                              cx={actorX + 4.2}
+                              cy={nameLineY - 1.2}
+                              r="1.2"
+                              fill={actorColor}
+                              stroke="#8c919c"
+                              strokeWidth="0.2"
+                            />
+                          )}
                           <line
-                            x1={actorX + 2}
+                            x1={nameStartX}
                             y1={nameLineY}
                             x2={actorX + actorWidth - 2}
                             y2={nameLineY}
@@ -1977,7 +2089,8 @@ function App() {
                         {(item.template === 'dialoghi2' ||
                           item.template === 'dialoghi3' ||
                           item.template === 'dialoghi' ||
-                          item.template === 'dialoghi6') && (
+                          item.template === 'dialoghi6' ||
+                          item.template === 'dialoghiParametric') && (
                           <span className="thumbUi">
                             {item.template === 'dialoghi2'
                               ? 'DIA2'
@@ -1985,6 +2098,8 @@ function App() {
                                 ? 'DIA3'
                                 : item.template === 'dialoghi6'
                                   ? 'DIA6'
+                                  : item.template === 'dialoghiParametric'
+                                    ? 'DIAP'
                                   : 'DIA4'}
                           </span>
                         )}

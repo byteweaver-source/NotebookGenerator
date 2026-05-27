@@ -8,6 +8,7 @@ export type TemplateKey =
   | 'dialoghi3'
   | 'dialoghi'
   | 'dialoghi6'
+  | 'dialoghiParametric'
   | 'storyboard'
   | 'fashionMale'
   | 'fashionMaleBack'

@@ -566,8 +566,25 @@ optgroup {
 
 .thumb-dialoghi2,
 .thumb-dialoghi3,
-.thumb-dialoghi6 {
+.thumb-dialoghi6,
+.thumb-dialoghiParametric {
   background: linear-gradient(180deg, #fff, #eef3fb);
+}
+
+.actorColorRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.actorColorRow input[type='color'] {
+  inline-size: 2.6rem;
+  block-size: 1.7rem;
+  border: 1px solid #3a4a5f;
+  border-radius: 0.45rem;
+  padding: 0.08rem;
+  background: #101a27;
 }
 
 .thumbMobileFrame {
@@ -769,7 +786,8 @@ optgroup {
 .thumbnail:not(.isActive) .thumb-dialoghi,
 .thumbnail:not(.isActive) .thumb-dialoghi2,
 .thumbnail:not(.isActive) .thumb-dialoghi3,
-.thumbnail:not(.isActive) .thumb-dialoghi6 {
+.thumbnail:not(.isActive) .thumb-dialoghi6,
+.thumbnail:not(.isActive) .thumb-dialoghiParametric {
   background: #ffffff !important;
   background-image: none !important;
 }
@@ -817,7 +835,8 @@ optgroup {
 .thumb-dialoghi,
 .thumb-dialoghi2,
 .thumb-dialoghi3,
-.thumb-dialoghi6 {
+.thumb-dialoghi6,
+.thumb-dialoghiParametric {
   background: #ffffff !important;
   background-image: none !important;
 }

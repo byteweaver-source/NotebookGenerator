@@ -10,6 +10,7 @@ export const templateLabels: Record<TemplateKey, string> = {
   dialoghi3: 'Dialoghi 3',
   dialoghi: 'Dialoghi 4',
   dialoghi6: 'Dialoghi 6',
+  dialoghiParametric: 'Dialoghi Parametrico',
   storyboard: 'Storyboard',
   fashionMale: 'Manichino Uomo Front',
   fashionMaleBack: 'Manichino Uomo Back',
@@ -37,7 +38,7 @@ export const templateGroups: TemplateGroup[] = [
   {
     id: 'scenography',
     label: 'Scenografia',
-    templates: ['dialoghi2', 'dialoghi3', 'dialoghi', 'dialoghi6', 'storyboard'],
+    templates: ['dialoghi2', 'dialoghi3', 'dialoghi', 'dialoghi6', 'dialoghiParametric', 'storyboard'],
   },
   {
     id: 'ui',
