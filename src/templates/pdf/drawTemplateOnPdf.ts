@@ -29,7 +29,7 @@ export function drawTemplateOnPdf(page: PDFPage, template: TemplateKey, rect: Mm
     return
   }
 
-  if (template === 'dialoghi') {
+  if (template === 'dialoghi' || template === 'storyboard') {
     drawScenographyTemplatePdf(page, template, rect)
     return
   }

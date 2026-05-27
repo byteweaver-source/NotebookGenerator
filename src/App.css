@@ -65,6 +65,114 @@
   font-size: 0.98rem;
 }
 
+.customDropdown {
+  position: relative;
+  width: 100%;
+}
+
+.customDropdownTrigger {
+  width: 100%;
+  border: 1px solid var(--ink-soft);
+  background: #0f1722;
+  color: #e9f0fb;
+  border-radius: 10px;
+  padding: 0.58rem 0.7rem;
+  font-size: 0.98rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  cursor: pointer;
+}
+
+.customDropdownTrigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.customDropdownValue {
+  text-align: left;
+}
+
+.customDropdownCaret {
+  font-size: 0.8rem;
+  color: #9eb0c8;
+  flex: 0 0 auto;
+}
+
+.customDropdownMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 280px;
+  overflow: auto;
+  border: 1px solid #324258;
+  border-radius: 10px;
+  background: #101925;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+  z-index: 40;
+  padding: 0.32rem;
+}
+
+.customDropdownSection {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.customDropdownSection + .customDropdownSection {
+  margin-top: 0.3rem;
+  padding-top: 0.28rem;
+  border-top: 1px solid #2a3647;
+}
+
+.customDropdownSectionLabel {
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #8ea2be;
+  padding: 0.22rem 0.38rem;
+}
+
+.customDropdownOption {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #e8effa;
+  border-radius: 8px;
+  text-align: left;
+  padding: 0.44rem 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.customDropdownOption:hover {
+  background: #1c2a3d;
+}
+
+.customDropdownOption.isSelected {
+  border-color: #486693;
+  background: #24384f;
+}
+
+select,
+option,
+optgroup {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+select {
+  color: #e9f0fb;
+  background-color: #0f1722;
+  color-scheme: light;
+}
+
+option,
+optgroup {
+  color: #121821;
+  background-color: #ffffff;
+}
+
 .primaryButton {
   margin-top: 1.2rem;
   width: 100%;
@@ -94,6 +202,21 @@
   align-items: center;
   gap: 0.5rem;
   font-weight: 600;
+}
+
+.group label.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0;
+  width: 100%;
+}
+
+.group label.checkboxRow input[type='checkbox'] {
+  margin: 0;
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: 0 0 auto;
 }
 
 .rowControls {
@@ -190,6 +313,11 @@
 
 .iconShort {
   letter-spacing: 0.03em;
+  font-size: 0.92rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .hiddenFileInput {
@@ -295,6 +423,7 @@
   align-items: center;
   justify-content: flex-start;
   gap: 0.85rem;
+  overflow-x: auto;
 }
 
 .hintReserved {
@@ -525,4 +654,158 @@
   .previewWrap {
     min-height: 520px;
   }
+}
+
+/* Dark theme refresh */
+.panel {
+  border-color: #2f3b4c;
+  background: #111a25;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.42);
+}
+
+.panel p,
+.group label,
+.hint,
+.thumbMeta {
+  color: #a6b3c6;
+}
+
+.groupedBox,
+.previewTopToolbar,
+.selectedPageToolbar,
+.pagePlanItem,
+.spreadGroup.duplex {
+  border-color: #2f3d50;
+  background: #121b28;
+}
+
+.groupTitle,
+.selectedPageLabel,
+.spreadLabel {
+  color: #d3e0f5;
+}
+
+.group select,
+.group input,
+.rowControls select,
+.pagePlanItem select,
+.previewTopToolbar select,
+.selectedPageToolbar select {
+  border-color: #344459;
+  background: #0f1722;
+  color: #e9f0fb;
+}
+
+.smallButton,
+.iconToolButton {
+  border-color: #344459;
+  background: #162233;
+  color: #e6eef9;
+}
+
+.smallButton:hover,
+.iconToolButton:hover {
+  background: #223146;
+}
+
+.smallButton.danger,
+.iconToolButton.danger {
+  border-color: #5f3c44;
+  background: #2a1a20;
+  color: #f0cad2;
+}
+
+.primaryButton {
+  background: #2f6ad7;
+}
+
+.previewWrap {
+  border-color: #2f3b4c;
+  background: #0f1722;
+}
+
+.preview {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+}
+
+.thumbnailBar {
+  padding-bottom: 0.45rem;
+}
+
+.thumbnail {
+  border-color: #3a4a5f;
+  background: #111a26;
+}
+
+.thumbnail .thumbPreview {
+  border-color: #cfd9e8;
+  background: #ffffff;
+}
+
+.thumbnail:not(.isActive) .thumbPreview {
+  background: #ffffff !important;
+  border-color: #cfd9e8;
+}
+
+.thumbnail:not(.isActive) .thumb-dots,
+.thumbnail:not(.isActive) .thumb-lines,
+.thumbnail:not(.isActive) .thumb-grid,
+.thumbnail:not(.isActive) .thumb-isometric,
+.thumbnail:not(.isActive) .thumb-uiMobile,
+.thumbnail:not(.isActive) .thumb-uiDesktop,
+.thumbnail:not(.isActive) .thumb-blank,
+.thumbnail:not(.isActive) .thumb-fashionMale,
+.thumbnail:not(.isActive) .thumb-fashionMaleBack,
+.thumbnail:not(.isActive) .thumb-fashionFemale,
+.thumbnail:not(.isActive) .thumb-fashionFemaleBack,
+.thumbnail:not(.isActive) .thumb-fashionChildUnisex,
+.thumbnail:not(.isActive) .thumb-fashionGrid9,
+.thumbnail:not(.isActive) .thumb-dialoghi {
+  background: #ffffff !important;
+  background-image: none !important;
+}
+
+.thumbnail:not(.isActive) .thumbUi,
+.thumbnail:not(.isActive) .thumbMeta {
+  color: #8fa2bd;
+}
+
+.thumbnail:not(.isActive) .thumbUi {
+  border-color: #3f4f64;
+  background: #1a2637;
+}
+
+.thumbnail.isActive {
+  border-color: #e5edf9;
+  box-shadow: 0 0 0 2px rgba(216, 231, 253, 0.28);
+  background: #f7fbff;
+}
+
+.thumbnail.isActive .thumbPreview {
+  border-color: #cfd9e8;
+  background: #ffffff;
+}
+
+.thumbnail.isActive .thumbUi {
+  color: #7a4821;
+  border-color: #d4bda2;
+  background: #fff1dd;
+}
+
+.thumb-dots,
+.thumb-lines,
+.thumb-grid,
+.thumb-isometric,
+.thumb-uiMobile,
+.thumb-uiDesktop,
+.thumb-blank,
+.thumb-fashionMale,
+.thumb-fashionMaleBack,
+.thumb-fashionFemale,
+.thumb-fashionFemaleBack,
+.thumb-fashionChildUnisex,
+.thumb-fashionGrid9,
+.thumb-dialoghi {
+  background: #ffffff !important;
+  background-image: none !important;
 }

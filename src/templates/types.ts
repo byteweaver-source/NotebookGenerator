@@ -5,6 +5,7 @@ export type TemplateKey =
   | 'grid'
   | 'isometric'
   | 'dialoghi'
+  | 'storyboard'
   | 'fashionMale'
   | 'fashionMaleBack'
   | 'fashionFemale'

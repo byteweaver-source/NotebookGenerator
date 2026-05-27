@@ -64,11 +64,11 @@ const bindingLabels: Record<BindingKey, string> = {
   booklet: 'Piegatura a libretto',
 }
 
-const elementIconLabels: Record<ElementKind, { short: string; title: string }> = {
-  phone: { short: 'PH', title: 'Aggiungi telefono' },
-  browser: { short: 'BR', title: 'Aggiungi browser frame' },
-  card: { short: 'CD', title: 'Aggiungi card' },
-  form: { short: 'FM', title: 'Aggiungi form' },
+const elementIconLabels: Record<ElementKind, { iconClass: string; title: string }> = {
+  phone: { iconClass: 'fa-solid fa-mobile-screen-button', title: 'Aggiungi telefono' },
+  browser: { iconClass: 'fa-solid fa-desktop', title: 'Aggiungi browser frame' },
+  card: { iconClass: 'fa-solid fa-address-card', title: 'Aggiungi card' },
+  form: { iconClass: 'fa-solid fa-clipboard-list', title: 'Aggiungi form' },
 }
 
 function mmToPt(mm: number): number {
@@ -634,6 +634,95 @@ function CustomElementShape(props: {
   )
 }
 
+type DropdownSection = {
+  label?: string
+  items: Array<{ value: string; label: string }>
+}
+
+function CustomDropdown(props: {
+  value: string
+  sections: DropdownSection[]
+  onChange: (value: string) => void
+  disabled?: boolean
+  id?: string
+}) {
+  const { value, sections, onChange, disabled = false, id } = props
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    function onPointerDown(event: PointerEvent) {
+      if (!rootRef.current) {
+        return
+      }
+      if (!rootRef.current.contains(event.target as Node)) {
+        setOpen(false)
+      }
+    }
+
+    function onEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onEscape)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onEscape)
+    }
+  }, [])
+
+  const selectedItem = sections
+    .flatMap((section) => section.items)
+    .find((item) => item.value === value)
+
+  return (
+    <div ref={rootRef} className={`customDropdown ${open ? 'isOpen' : ''}`}>
+      <button
+        id={id}
+        type="button"
+        className="customDropdownTrigger"
+        onClick={() => !disabled && setOpen((prev) => !prev)}
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className="customDropdownValue">{selectedItem?.label ?? value}</span>
+        <span className="customDropdownCaret" aria-hidden="true">
+          ▾
+        </span>
+      </button>
+
+      {open && !disabled && (
+        <div className="customDropdownMenu" role="listbox">
+          {sections.map((section, sectionIndex) => (
+            <div key={`${section.label ?? 'section'}-${sectionIndex}`} className="customDropdownSection">
+              {section.label && (
+                <div className="customDropdownSectionLabel">{section.label}</div>
+              )}
+              {section.items.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  className={`customDropdownOption ${item.value === value ? 'isSelected' : ''}`}
+                  onClick={() => {
+                    onChange(item.value)
+                    setOpen(false)
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function App() {
   const [size, setSize] = useState<PageSizeKey>('A4')
   const [orientation, setOrientation] = useState<Orientation>('portrait')
@@ -712,8 +801,8 @@ function App() {
     [page.height, page.width, previewMargins],
   )
 
-  const maxPreviewWidth = 700
-  const previewScale = Math.min(maxPreviewWidth / page.width, 1)
+  const maxPreviewWidth = 390
+  const previewScale = maxPreviewWidth / page.width
   const previewWidth = page.width * previewScale
   const previewHeight = page.height * previewScale
 
@@ -937,27 +1026,33 @@ function App() {
     totalPages,
   )
 
-  const renderTemplateOptions = (currentValue: TemplateKey) => {
+  const getTemplateSections = (currentValue: TemplateKey): DropdownSection[] => {
     const isHiddenCurrent = !isTemplateSelectable(currentValue)
+    const sections: DropdownSection[] = []
 
-    return (
-      <>
-        {isHiddenCurrent && (
-          <option value={currentValue}>
-            {templateLabels[currentValue]} (temporaneamente nascosto)
-          </option>
-        )}
-        {selectableTemplateGroups.map((group) => (
-          <optgroup key={group.id} label={group.label}>
-            {group.templates.map((templateKey) => (
-              <option key={templateKey} value={templateKey}>
-                {templateLabels[templateKey]}
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </>
-    )
+    if (isHiddenCurrent) {
+      sections.push({
+        label: 'Attivo ma nascosto',
+        items: [
+          {
+            value: currentValue,
+            label: `${templateLabels[currentValue]} (temporaneamente nascosto)`,
+          },
+        ],
+      })
+    }
+
+    for (const group of selectableTemplateGroups) {
+      sections.push({
+        label: group.label,
+        items: group.templates.map((templateKey) => ({
+          value: templateKey,
+          label: templateLabels[templateKey],
+        })),
+      })
+    }
+
+    return sections
   }
 
   const previewPageNumberText = `${clampedPreviewPageNumber}/${totalPages}`
@@ -1015,57 +1110,65 @@ function App() {
 
         <div className="group">
           <label htmlFor="size">Formato</label>
-          <select
+          <CustomDropdown
             id="size"
             value={size}
-            onChange={(event) => setSize(event.target.value as PageSizeKey)}
-          >
-            {Object.keys(pageSizes).map((key) => (
-              <option key={key} value={key}>
-                {key}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setSize(value as PageSizeKey)}
+            sections={[
+              {
+                items: Object.keys(pageSizes).map((key) => ({
+                  value: key,
+                  label: key,
+                })),
+              },
+            ]}
+          />
         </div>
 
         <div className="group">
           <label htmlFor="orientation">Orientamento</label>
-          <select
+          <CustomDropdown
             id="orientation"
             value={orientation}
-            onChange={(event) => setOrientation(event.target.value as Orientation)}
-          >
-            <option value="portrait">Verticale</option>
-            <option value="landscape">Orizzontale</option>
-          </select>
+            onChange={(value) => setOrientation(value as Orientation)}
+            sections={[
+              {
+                items: [
+                  { value: 'portrait', label: 'Verticale' },
+                  { value: 'landscape', label: 'Orizzontale' },
+                ],
+              },
+            ]}
+          />
         </div>
 
         <div className="group">
           <label htmlFor="binding">Rilegatura</label>
-          <select
+          <CustomDropdown
             id="binding"
             value={binding}
-            onChange={(event) => setBinding(event.target.value as BindingKey)}
-          >
-            {Object.entries(bindingLabels).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setBinding(value as BindingKey)}
+            sections={[
+              {
+                items: Object.entries(bindingLabels).map(([key, label]) => ({
+                  value: key,
+                  label,
+                })),
+              },
+            ]}
+          />
         </div>
 
         {!compositionEnabled && (
           <div className="group groupedBox">
             <label className="groupTitle">Impostazioni Generali Pagine</label>
             <label htmlFor="template">Template generale</label>
-            <select
+            <CustomDropdown
               id="template"
               value={template}
-              onChange={(event) => setTemplate(event.target.value as TemplateKey)}
-            >
-              {renderTemplateOptions(template)}
-            </select>
+              onChange={(value) => setTemplate(value as TemplateKey)}
+              sections={getTemplateSections(template)}
+            />
 
             <label htmlFor="pages">Numero pagine PDF</label>
             <input
@@ -1109,14 +1212,11 @@ function App() {
             <label>Aggiungi nuova pagina</label>
 
             <div className="rowControls">
-              <select
+              <CustomDropdown
                 value={compositionTemplateToAdd}
-                onChange={(event) =>
-                  setCompositionTemplateToAdd(event.target.value as TemplateKey)
-                }
-              >
-                {renderTemplateOptions(compositionTemplateToAdd)}
-              </select>
+                onChange={(value) => setCompositionTemplateToAdd(value as TemplateKey)}
+                sections={getTemplateSections(compositionTemplateToAdd)}
+              />
               <button type="button" className="smallButton" onClick={addCompositionPage}>
                 Aggiungi pagina
               </button>
@@ -1157,18 +1257,23 @@ function App() {
           </label>
 
           <label htmlFor="headerAlign">Header allineamento</label>
-          <select
+          <CustomDropdown
             id="headerAlign"
             value={headerOptions.align}
-            onChange={(event) =>
-              setHeaderOptions((prev) => ({ ...prev, align: event.target.value as TextAlignOption }))
+            onChange={(value) =>
+              setHeaderOptions((prev) => ({ ...prev, align: value as TextAlignOption }))
             }
-          >
-            <option value="left">Sinistra</option>
-            <option value="center">Centrato</option>
-            <option value="right">Destra</option>
-            <option value="distributed">Distribuito</option>
-          </select>
+            sections={[
+              {
+                items: [
+                  { value: 'left', label: 'Sinistra' },
+                  { value: 'center', label: 'Centrato' },
+                  { value: 'right', label: 'Destra' },
+                  { value: 'distributed', label: 'Distribuito' },
+                ],
+              },
+            ]}
+          />
 
           <label htmlFor="footerText">Footer testo</label>
           <input
@@ -1193,18 +1298,23 @@ function App() {
           </label>
 
           <label htmlFor="footerAlign">Footer allineamento</label>
-          <select
+          <CustomDropdown
             id="footerAlign"
             value={footerOptions.align}
-            onChange={(event) =>
-              setFooterOptions((prev) => ({ ...prev, align: event.target.value as TextAlignOption }))
+            onChange={(value) =>
+              setFooterOptions((prev) => ({ ...prev, align: value as TextAlignOption }))
             }
-          >
-            <option value="left">Sinistra</option>
-            <option value="center">Centrato</option>
-            <option value="right">Destra</option>
-            <option value="distributed">Distribuito</option>
-          </select>
+            sections={[
+              {
+                items: [
+                  { value: 'left', label: 'Sinistra' },
+                  { value: 'center', label: 'Centrato' },
+                  { value: 'right', label: 'Destra' },
+                  { value: 'distributed', label: 'Distribuito' },
+                ],
+              },
+            ]}
+          />
         </div>
 
         <button
@@ -1251,22 +1361,18 @@ function App() {
           </span>
 
           {compositionEnabled && selectedCompositionPage ? (
-            <select
+            <CustomDropdown
               value={selectedCompositionPage.template}
-              onChange={(event) =>
-                updateCurrentCompositionTemplate(event.target.value as TemplateKey)
-              }
-            >
-              {renderTemplateOptions(selectedCompositionPage.template)}
-            </select>
+              onChange={(value) => updateCurrentCompositionTemplate(value as TemplateKey)}
+              sections={getTemplateSections(selectedCompositionPage.template)}
+            />
           ) : (
-            <select
+            <CustomDropdown
               value={template}
-              onChange={(event) => setTemplate(event.target.value as TemplateKey)}
+              onChange={(value) => setTemplate(value as TemplateKey)}
+              sections={getTemplateSections(template)}
               disabled={compositionEnabled}
-            >
-              {renderTemplateOptions(template)}
-            </select>
+            />
           )}
 
           {compositionEnabled && selectedCompositionPage && (
@@ -1315,7 +1421,9 @@ function App() {
                 onClick={() => addElement(kind)}
                 disabled={!canDragElements}
               >
-                <span className="iconShort">{elementIconLabels[kind].short}</span>
+                <span className="iconShort" aria-hidden="true">
+                  <i className={elementIconLabels[kind].iconClass} />
+                </span>
               </button>
             ))}
               <button
@@ -1325,7 +1433,9 @@ function App() {
                 onClick={() => uploadSvgInputRef.current?.click()}
                 disabled={!canDragElements}
               >
-                <span className="iconShort">SVG</span>
+                <span className="iconShort" aria-hidden="true">
+                  <i className="fa-solid fa-file-arrow-up" />
+                </span>
               </button>
             <button
               type="button"
@@ -1334,7 +1444,9 @@ function App() {
               onClick={removeSelected}
               disabled={!selectedId}
             >
-              <span className="iconShort">DEL</span>
+              <span className="iconShort" aria-hidden="true">
+                <i className="fa-solid fa-trash" />
+              </span>
             </button>
           </div>
         </div>
@@ -1501,6 +1613,83 @@ function App() {
                       height={blockHeight}
                       rx="2"
                     />
+                  </>
+                )
+              })()}
+            </g>
+          )}
+
+          {activeTemplate === 'storyboard' && (
+            <g stroke="#8c919c" fill="#f7f9fc" strokeWidth="0.4">
+              {(() => {
+                const sceneCount = 3
+                const outerPaddingX = 4
+                const outerPaddingY = 6
+                const sceneGap = 6
+                const sceneWidth = previewContent.width - outerPaddingX * 2
+                const sceneHeight =
+                  (previewContent.height - outerPaddingY * 2 - sceneGap * (sceneCount - 1)) /
+                  sceneCount
+
+                return (
+                  <>
+                    {Array.from({ length: sceneCount }, (_, i) => {
+                      const sceneX = previewContent.x + outerPaddingX
+                      const sceneY =
+                        previewContent.y + outerPaddingY + i * (sceneHeight + sceneGap)
+                      const headerY = sceneY + 5.2
+                      const textBlockWidth = sceneWidth / 3
+                      const splitGap = 3
+                      const textX = sceneX + 2
+                      const contentTop = sceneY + 9
+                      const contentHeight = sceneHeight - 12
+                      const sketchX = textX + textBlockWidth + splitGap
+                      const sketchWidth = sceneWidth - (textBlockWidth + splitGap + 4)
+
+                      return (
+                        <g key={`story-scene-${i}`}>
+                          <rect
+                            x={sceneX}
+                            y={sceneY}
+                            width={sceneWidth}
+                            height={sceneHeight}
+                          />
+                          <line
+                            x1={sceneX + 22}
+                            y1={headerY}
+                            x2={sceneX + sceneWidth - 4}
+                            y2={headerY}
+                            strokeWidth="0.32"
+                          />
+                          <rect
+                            x={sketchX}
+                            y={contentTop}
+                            width={sketchWidth}
+                            height={contentHeight}
+                            fill="none"
+                            strokeWidth="0.35"
+                          />
+                          {Array.from(
+                            {
+                              length: Math.max(1, Math.floor((contentHeight - 4) / 5.8)),
+                            },
+                            (_, lineIndex) => {
+                              const lineY = contentTop + 4 + lineIndex * 5.8
+                              return (
+                                <line
+                                  key={`story-line-${i}-${lineIndex}`}
+                                  x1={textX}
+                                  y1={lineY}
+                                  x2={textX + textBlockWidth - 1.8}
+                                  y2={lineY}
+                                  strokeWidth="0.2"
+                                />
+                              )
+                            },
+                          )}
+                        </g>
+                      )
+                    })}
                   </>
                 )
               })()}
@@ -1690,6 +1879,9 @@ function App() {
                         )}
                         {item.template === 'dialoghi' && (
                           <span className="thumbUi">DIA</span>
+                        )}
+                        {item.template === 'storyboard' && (
+                          <span className="thumbUi">STB</span>
                         )}
                         {item.template === 'uiMobile' && (
                           <>
