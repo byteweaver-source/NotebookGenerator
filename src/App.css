@@ -431,6 +431,10 @@
   );
 }
 
+.thumb-dialoghi {
+  background: linear-gradient(180deg, #fff, #eef3fb);
+}
+
 .thumbMobileFrame {
   position: absolute;
   left: 50%;

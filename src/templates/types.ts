@@ -4,6 +4,7 @@ export type TemplateKey =
   | 'lines'
   | 'grid'
   | 'isometric'
+  | 'dialoghi'
   | 'fashionMale'
   | 'fashionMaleBack'
   | 'fashionFemale'

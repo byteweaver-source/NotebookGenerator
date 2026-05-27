@@ -2,6 +2,7 @@ import type { PDFPage } from 'pdf-lib'
 import type { MmRect, TemplateKey } from '../types'
 import { drawBasicTemplatePdf } from './basic'
 import { drawFashionTemplatePdf } from './fashion'
+import { drawScenographyTemplatePdf } from './scenography'
 import { drawUiTemplatePdf } from './ui'
 
 export function drawTemplateOnPdf(page: PDFPage, template: TemplateKey, rect: MmRect): void {
@@ -25,6 +26,11 @@ export function drawTemplateOnPdf(page: PDFPage, template: TemplateKey, rect: Mm
     template === 'fashionGrid9'
   ) {
     drawFashionTemplatePdf(page, template, rect)
+    return
+  }
+
+  if (template === 'dialoghi') {
+    drawScenographyTemplatePdf(page, template, rect)
     return
   }
 

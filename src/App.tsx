@@ -9,7 +9,11 @@ import {
 import { PDFDocument, rgb } from 'pdf-lib'
 import './App.css'
 import type { MmRect, TemplateKey } from './templates/types'
-import { templateLabels } from './templates/config'
+import {
+  isTemplateSelectable,
+  selectableTemplateGroups,
+  templateLabels,
+} from './templates/config'
 import { drawTemplateOnPdf } from './templates/pdf/drawTemplateOnPdf'
 
 type PageSizeKey = 'A4' | 'A5'
@@ -932,6 +936,30 @@ function App() {
     clampedPreviewPageNumber,
     totalPages,
   )
+
+  const renderTemplateOptions = (currentValue: TemplateKey) => {
+    const isHiddenCurrent = !isTemplateSelectable(currentValue)
+
+    return (
+      <>
+        {isHiddenCurrent && (
+          <option value={currentValue}>
+            {templateLabels[currentValue]} (temporaneamente nascosto)
+          </option>
+        )}
+        {selectableTemplateGroups.map((group) => (
+          <optgroup key={group.id} label={group.label}>
+            {group.templates.map((templateKey) => (
+              <option key={templateKey} value={templateKey}>
+                {templateLabels[templateKey]}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </>
+    )
+  }
+
   const previewPageNumberText = `${clampedPreviewPageNumber}/${totalPages}`
 
   function renderPreviewHeaderFooterLine(options: {
@@ -1036,11 +1064,7 @@ function App() {
               value={template}
               onChange={(event) => setTemplate(event.target.value as TemplateKey)}
             >
-              {Object.entries(templateLabels).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
+              {renderTemplateOptions(template)}
             </select>
 
             <label htmlFor="pages">Numero pagine PDF</label>
@@ -1091,11 +1115,7 @@ function App() {
                   setCompositionTemplateToAdd(event.target.value as TemplateKey)
                 }
               >
-                {Object.entries(templateLabels).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
+                {renderTemplateOptions(compositionTemplateToAdd)}
               </select>
               <button type="button" className="smallButton" onClick={addCompositionPage}>
                 Aggiungi pagina
@@ -1237,11 +1257,7 @@ function App() {
                 updateCurrentCompositionTemplate(event.target.value as TemplateKey)
               }
             >
-              {Object.entries(templateLabels).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
+              {renderTemplateOptions(selectedCompositionPage.template)}
             </select>
           ) : (
             <select
@@ -1249,11 +1265,7 @@ function App() {
               onChange={(event) => setTemplate(event.target.value as TemplateKey)}
               disabled={compositionEnabled}
             >
-              {Object.entries(templateLabels).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
+              {renderTemplateOptions(template)}
             </select>
           )}
 
@@ -1459,6 +1471,42 @@ function App() {
             </g>
           )}
 
+          {activeTemplate === 'dialoghi' && (
+            <g stroke="#8c919c" fill="#f7f9fc" strokeWidth="0.45">
+              {(() => {
+                const gap = 8
+                const sidePadding = 6
+                const topPadding = 8
+                const bottomPadding = 8
+                const availableHeight =
+                  previewContent.height - topPadding - bottomPadding - gap
+                const blockHeight = availableHeight / 2
+                const blockWidth = previewContent.width - sidePadding * 2
+                const topY = previewContent.y + topPadding
+                const bottomY = topY + blockHeight + gap
+
+                return (
+                  <>
+                    <rect
+                      x={previewContent.x + sidePadding}
+                      y={topY}
+                      width={blockWidth}
+                      height={blockHeight}
+                      rx="2"
+                    />
+                    <rect
+                      x={previewContent.x + sidePadding}
+                      y={bottomY}
+                      width={blockWidth}
+                      height={blockHeight}
+                      rx="2"
+                    />
+                  </>
+                )
+              })()}
+            </g>
+          )}
+
           {(activeTemplate === 'uiMobile' || activeTemplate === 'uiDesktop') && (
             <g stroke="#8c919c" fill="none" strokeWidth="0.4">
               {activeTemplate === 'uiMobile' ? (
@@ -1639,6 +1687,9 @@ function App() {
                         )}
                         {item.template === 'fashionGrid9' && (
                           <span className="thumbUi">9H</span>
+                        )}
+                        {item.template === 'dialoghi' && (
+                          <span className="thumbUi">DIA</span>
                         )}
                         {item.template === 'uiMobile' && (
                           <>
