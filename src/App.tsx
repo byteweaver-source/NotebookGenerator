@@ -1905,6 +1905,141 @@ function App() {
             </g>
           )}
 
+          {activeTemplate === 'uiUseCase' && (() => {
+            const actorMargin = previewContent.width * (16 / 210)
+            const titleLineY = previewContent.y + previewContent.height * (8 / 277)
+            const boxY = previewContent.y + previewContent.height * (15 / 277)
+            const boxHeight = previewContent.height * 0.50
+            const boxX = previewContent.x + actorMargin
+            const boxWidth = previewContent.width - actorMargin * 2
+            const linesTop = boxY + boxHeight + previewContent.height * (6 / 277)
+            const lineGap = previewContent.height * (5.5 / 277)
+            return (
+              <g stroke="#8c919c" fill="none" strokeWidth="0.4">
+                <line
+                  x1={previewContent.x + 2}
+                  y1={titleLineY}
+                  x2={previewContent.x + previewContent.width - 2}
+                  y2={titleLineY}
+                  stroke="#6b7280"
+                />
+                <rect
+                  x={boxX}
+                  y={boxY}
+                  width={boxWidth}
+                  height={boxHeight}
+                  stroke="#6b7280"
+                  strokeWidth="0.6"
+                />
+                {Array.from({ length: Math.floor((previewContent.y + previewContent.height - 2 - linesTop) / lineGap) }).map((_, i) => (
+                  <line
+                    key={i}
+                    x1={previewContent.x + 2}
+                    y1={linesTop + i * lineGap}
+                    x2={previewContent.x + previewContent.width - 2}
+                    y2={linesTop + i * lineGap}
+                    strokeWidth="0.25"
+                  />
+                ))}
+              </g>
+            )
+          })()}
+
+          {activeTemplate === 'projectCover' && (() => {
+            const titleY = previewContent.y + previewContent.height * 0.33
+            const subtitleY = previewContent.y + previewContent.height * 0.46
+            const dividerY = previewContent.y + previewContent.height * 0.57
+            const dateY = previewContent.y + previewContent.height * 0.89
+            return (
+              <g fill="none" strokeWidth="0.4">
+                <rect
+                  x={previewContent.x}
+                  y={previewContent.y}
+                  width={previewContent.width}
+                  height={previewContent.height * (3 / 277)}
+                  fill="#6b7280"
+                  stroke="none"
+                />
+                <line
+                  x1={previewContent.x + 4} y1={titleY}
+                  x2={previewContent.x + previewContent.width - 4} y2={titleY}
+                  stroke="#6b7280" strokeWidth="0.8"
+                />
+                <line
+                  x1={previewContent.x + 4} y1={subtitleY}
+                  x2={previewContent.x + previewContent.width - 14} y2={subtitleY}
+                  stroke="#6b7280" strokeWidth="0.5"
+                />
+                <line
+                  x1={previewContent.x + 4} y1={dividerY}
+                  x2={previewContent.x + previewContent.width - 4} y2={dividerY}
+                  stroke="#c8cdd6" strokeWidth="0.3"
+                />
+                {[0, 1].map((i) => (
+                  <line
+                    key={i}
+                    x1={previewContent.x + 4}
+                    y1={previewContent.y + previewContent.height * (0.66 + i * 0.09)}
+                    x2={previewContent.x + previewContent.width - 22}
+                    y2={previewContent.y + previewContent.height * (0.66 + i * 0.09)}
+                    stroke="#6b7280" strokeWidth="0.4"
+                  />
+                ))}
+                <line
+                  x1={previewContent.x + previewContent.width * 0.55} y1={dateY}
+                  x2={previewContent.x + previewContent.width - 4} y2={dateY}
+                  stroke="#8c919c" strokeWidth="0.35"
+                />
+              </g>
+            )
+          })()}
+
+          {activeTemplate === 'projectChecklist' && (() => {
+            const checkboxSize = previewContent.height * (8 / 277)
+            const checkboxLeft = previewContent.x + previewContent.width * (3 / 210)
+            const textLeft = previewContent.x + previewContent.width * (15 / 210)
+            const textRight = previewContent.x + previewContent.width - previewContent.width * (3 / 210)
+            const lineGap = previewContent.height * (6 / 277)
+            const textAreaH = 3 * lineGap
+            const checkboxTopOffset = (textAreaH - checkboxSize) / 2
+            const itemPitch = textAreaH + previewContent.height * (4 / 277)
+            const items: number[] = []
+            for (
+              let itemTop = previewContent.y + previewContent.height * (4 / 277);
+              itemTop + textAreaH <= previewContent.y + previewContent.height - 2;
+              itemTop += itemPitch
+            ) {
+              items.push(itemTop)
+            }
+            return (
+              <g fill="none">
+                {items.map((itemTop, idx) => (
+                  <g key={idx}>
+                    <rect
+                      x={checkboxLeft}
+                      y={itemTop + checkboxTopOffset}
+                      width={checkboxSize}
+                      height={checkboxSize}
+                      stroke="#8c919c"
+                      strokeWidth="0.45"
+                    />
+                    {[0, 1, 2].map((j) => (
+                      <line
+                        key={j}
+                        x1={textLeft}
+                        y1={itemTop + (j + 1) * lineGap}
+                        x2={textRight}
+                        y2={itemTop + (j + 1) * lineGap}
+                        stroke="#c8cdd6"
+                        strokeWidth="0.3"
+                      />
+                    ))}
+                  </g>
+                ))}
+              </g>
+            )
+          })()}
+
           {(activeTemplate === 'uiMobile' || activeTemplate === 'uiDesktop') && (
             <g stroke="#8c919c" fill="none" strokeWidth="0.4">
               {activeTemplate === 'uiMobile' ? (
@@ -2120,6 +2255,15 @@ function App() {
                             <span className="thumbDesktopBlocks" />
                             <span className="thumbUi">DESKTOP</span>
                           </>
+                        )}
+                        {item.template === 'uiUseCase' && (
+                          <span className="thumbUi">UC</span>
+                        )}
+                        {item.template === 'projectCover' && (
+                          <span className="thumbUi">CVR</span>
+                        )}
+                        {item.template === 'projectChecklist' && (
+                          <span className="thumbUi">CHL</span>
                         )}
                       </span>
                       <span className="thumbMeta">

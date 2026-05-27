@@ -4,6 +4,7 @@ import { drawBasicTemplatePdf } from './basic'
 import { drawFashionTemplatePdf } from './fashion'
 import { drawScenographyTemplatePdf, type ScenographyRenderOptions } from './scenography'
 import { drawUiTemplatePdf } from './ui'
+import { drawProjectsTemplatePdf } from './projects'
 
 export function drawTemplateOnPdf(
   page: PDFPage,
@@ -46,5 +47,19 @@ export function drawTemplateOnPdf(
     return
   }
 
-  drawUiTemplatePdf(page, template, rect)
+  if (
+    template === 'uiMobile' ||
+    template === 'uiDesktop' ||
+    template === 'uiUseCase'
+  ) {
+    drawUiTemplatePdf(page, template, rect)
+    return
+  }
+
+  if (
+    template === 'projectCover' ||
+    template === 'projectChecklist'
+  ) {
+    drawProjectsTemplatePdf(page, template, rect)
+  }
 }

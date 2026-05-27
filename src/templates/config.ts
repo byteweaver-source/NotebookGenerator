@@ -20,6 +20,9 @@ export const templateLabels: Record<TemplateKey, string> = {
   fashionGrid9: 'Griglia Fashion 9-Head',
   uiMobile: 'Mockup UI Mobile',
   uiDesktop: 'Mockup UI Desktop',
+  uiUseCase: 'Use Case',  
+  projectCover: 'Cover',
+  projectChecklist: 'Checklist',
 }
 
 type TemplateGroup = {
@@ -43,7 +46,12 @@ export const templateGroups: TemplateGroup[] = [
   {
     id: 'ui',
     label: 'UI',
-    templates: ['uiMobile', 'uiDesktop'],
+    templates: ['uiMobile', 'uiDesktop', 'uiUseCase'],
+  },
+  {
+    id: 'progetti',
+    label: 'Progetti',
+    templates: ['projectCover', 'projectChecklist'],
   },
   {
     id: 'fashion',

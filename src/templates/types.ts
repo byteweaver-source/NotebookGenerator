@@ -18,6 +18,9 @@ export type TemplateKey =
   | 'fashionGrid9'
   | 'uiMobile'
   | 'uiDesktop'
+  | 'uiUseCase'
+  | 'projectCover'
+  | 'projectChecklist'
 
 export type MmRect = {
   x: number

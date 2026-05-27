@@ -522,7 +522,10 @@ optgroup {
 }
 
 .thumb-uiMobile,
-.thumb-uiDesktop {
+.thumb-uiDesktop,
+.thumb-uiUseCase,
+.thumb-projectCover,
+.thumb-projectChecklist {
   background: #fff;
 }
 
@@ -776,6 +779,9 @@ optgroup {
 .thumbnail:not(.isActive) .thumb-isometric,
 .thumbnail:not(.isActive) .thumb-uiMobile,
 .thumbnail:not(.isActive) .thumb-uiDesktop,
+.thumbnail:not(.isActive) .thumb-uiUseCase,
+.thumbnail:not(.isActive) .thumb-projectCover,
+.thumbnail:not(.isActive) .thumb-projectChecklist,
 .thumbnail:not(.isActive) .thumb-blank,
 .thumbnail:not(.isActive) .thumb-fashionMale,
 .thumbnail:not(.isActive) .thumb-fashionMaleBack,
@@ -825,6 +831,9 @@ optgroup {
 .thumb-isometric,
 .thumb-uiMobile,
 .thumb-uiDesktop,
+.thumb-uiUseCase,
+.thumb-projectCover,
+.thumb-projectChecklist,
 .thumb-blank,
 .thumb-fashionMale,
 .thumb-fashionMaleBack,
