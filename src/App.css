@@ -16,6 +16,22 @@
   padding: 1.2rem;
 }
 
+.panelTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.panelCloseButton {
+  display: none;
+  width: auto;
+}
+
+.panelBackdrop {
+  display: none;
+}
+
 .panel h1 {
   margin: 0;
   font-size: 2rem;
@@ -45,6 +61,25 @@
   font-weight: 800;
   color: #7a5826;
   text-transform: uppercase;
+}
+
+.themeTag {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border: 1px solid #344459;
+  border-radius: 999px;
+  background: #0f1722;
+  color: #c9d8ef;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.52rem;
+}
+
+.themeTagInline {
+  margin-bottom: 0.12rem;
 }
 
 .group label {
@@ -237,7 +272,7 @@ optgroup {
 .selectedPageLabel {
   font-size: 0.78rem;
   font-weight: 700;
-  color: #77511f;
+  color: #d3e0f5;
 }
 
 .selectedPageToolbar select {
@@ -258,6 +293,90 @@ optgroup {
   padding: 0.5rem;
   display: grid;
   gap: 0.45rem;
+  position: sticky;
+  top: 0.6rem;
+  z-index: 7;
+}
+
+.toolbarTheme {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.toolbarTheme-page {
+  align-items: center;
+}
+
+.toolbarThemeSpacer {
+  flex: 1 1 auto;
+}
+
+.mobileProjectMenuButton {
+  display: none;
+}
+
+.toolbarTheme .smallButton {
+  width: auto;
+}
+
+.splitAction {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.splitActionMain {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  min-width: 34px;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.splitActionToggle {
+  min-width: 2.1rem;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.splitActionMenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 142px;
+  border: 1px solid #344459;
+  border-radius: 10px;
+  background: #101925;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+  padding: 0.24rem;
+  display: grid;
+  gap: 0.18rem;
+  z-index: 45;
+}
+
+.splitActionMenuItem {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #e8effa;
+  border-radius: 8px;
+  text-align: left;
+  padding: 0.42rem 0.48rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.splitActionMenuItem:hover {
+  background: #1c2a3d;
+}
+
+.splitActionMenuItem:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .previewTopToolbar select {
@@ -270,16 +389,10 @@ optgroup {
   font-size: 0.88rem;
 }
 
-.topActions {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.35rem;
-}
-
 .iconToolbar {
   width: min(100%, 820px);
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, max-content));
+  grid-template-columns: repeat(2, minmax(0, max-content));
   justify-content: start;
   gap: 0.35rem;
 }
@@ -435,12 +548,288 @@ optgroup {
   box-shadow: 0 18px 36px rgba(0, 0, 0, 0.24);
 }
 
+.previewStage {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.pageQuickActions {
+  position: absolute;
+  top: 0.5rem;
+  right: -3.25rem;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.25rem;
+  border: 1px solid #344459;
+  border-radius: 10px;
+  background: rgba(16, 25, 37, 0.92);
+  backdrop-filter: blur(8px);
+}
+
+.pageQuickIndex {
+  position: absolute;
+  top: 0.5rem;
+  left: -3.25rem;
+  min-width: 40px;
+  min-height: 34px;
+  border: 1px solid #344459;
+  border-radius: 10px;
+  background: rgba(16, 25, 37, 0.92);
+  backdrop-filter: blur(8px);
+  color: #e6eef9;
+  font-size: 0.78rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.35rem;
+}
+
+.pageQuickSplit {
+  position: static;
+  display: grid;
+  grid-template-columns: 1fr;
+  width: 40px;
+  order: 4;
+}
+
+.pageQuickSplit .splitActionMenu {
+  right: calc(100% + 8px);
+  left: auto;
+  top: auto;
+  bottom: 0;
+}
+
+.pageQuickSplit .splitActionMain,
+.pageQuickSplit .splitActionToggle {
+  width: 40px;
+  min-width: 40px;
+  min-height: 34px;
+  font-size: 0.88rem;
+}
+
+.pageQuickSplit .splitActionMain {
+  border-radius: 10px;
+}
+
+.pageQuickSplit .splitActionToggle {
+  border-radius: 10px;
+  margin-top: 0.2rem;
+}
+
+.pageQuickActions .iconToolButton {
+  min-width: 40px;
+  min-height: 34px;
+}
+
 .thumbnailBar {
   width: min(100%, 820px);
   display: flex;
   gap: 0.55rem;
   overflow-x: auto;
   padding: 0.2rem 0.1rem 0.35rem;
+}
+
+.thumbnailBarSticky {
+  position: sticky;
+  bottom: 5.4rem;
+  z-index: 6;
+  border: 1px solid #2f3d50;
+  border-radius: 10px;
+  background: #121b28;
+  padding: 0.35rem;
+}
+
+.exportDock {
+  width: min(100%, 820px);
+  position: sticky;
+  bottom: 0.6rem;
+  z-index: 8;
+  border: 1px solid #344459;
+  background: rgba(17, 26, 37, 0.92);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  padding: 0.55rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.exportDockMeta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #a6b3c6;
+}
+
+.exportDockButton {
+  margin-top: 0;
+}
+
+.floatingModalLayer {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 18, 0.62);
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.floatingModal {
+  width: min(560px, 100%);
+  max-height: min(82vh, 760px);
+  overflow: auto;
+  border: 1px solid #344459;
+  border-radius: 14px;
+  background: #101925;
+  box-shadow: 0 20px 42px rgba(0, 0, 0, 0.48);
+  padding: 0.95rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.floatingModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.floatingModal label {
+  color: #a6b3c6;
+}
+
+.floatingModal input {
+  width: 100%;
+  border: 1px solid #344459;
+  background: #0f1722;
+  color: #e9f0fb;
+  border-radius: 10px;
+  padding: 0.58rem 0.7rem;
+  font-size: 0.98rem;
+}
+
+.elementLibraryModal {
+  width: min(760px, 100%);
+}
+
+.elementLibraryLayout {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.elementLibraryTree {
+  border: 1px solid #2f3d50;
+  border-radius: 10px;
+  background: #0f1722;
+  padding: 0.3rem;
+  display: grid;
+  gap: 0.24rem;
+  align-content: start;
+}
+
+.elementTreeNode {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #b6c4d9;
+  border-radius: 8px;
+  text-align: left;
+  padding: 0.44rem 0.5rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.elementTreeNode:hover {
+  background: #1c2a3d;
+}
+
+.elementTreeNode.isActive {
+  border-color: #486693;
+  background: #22354d;
+  color: #e8effa;
+}
+
+.elementLibraryList {
+  border: 1px solid #2f3d50;
+  border-radius: 10px;
+  background: #0f1722;
+  padding: 0.35rem;
+  display: grid;
+  gap: 0.3rem;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.elementLibrarySearchLabel {
+  color: #a6b3c6;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.elementLibrarySearch {
+  width: 100%;
+  border: 1px solid #344459;
+  background: #0f1722;
+  color: #e9f0fb;
+  border-radius: 9px;
+  padding: 0.46rem 0.58rem;
+  font-size: 0.88rem;
+}
+
+.elementLibrarySearch::placeholder {
+  color: #8ea2be;
+}
+
+.elementLibraryItem {
+  width: 100%;
+  border: 1px solid #344459;
+  border-radius: 10px;
+  background: #152132;
+  color: #e8effa;
+  padding: 0.5rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.55rem;
+  align-items: start;
+  text-align: left;
+  cursor: pointer;
+}
+
+.elementLibraryItem:hover {
+  background: #1e2e44;
+}
+
+.elementLibraryIcon {
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 1px solid #40536c;
+  border-radius: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #d4e3f8;
+}
+
+.elementLibraryText {
+  display: grid;
+  gap: 0.16rem;
+}
+
+.elementLibraryText strong {
+  font-size: 0.88rem;
+}
+
+.elementLibraryText span {
+  color: #a6b3c6;
+  font-size: 0.78rem;
 }
 
 .spreadGroup {
@@ -674,11 +1063,105 @@ optgroup {
   }
 
   .panel {
-    width: auto;
+    width: min(360px, calc(100vw - 1rem));
+    position: fixed;
+    left: 0.5rem;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    z-index: 60;
+    overflow: auto;
+    transform: translateX(-110%);
+    transition: transform 180ms ease;
+  }
+
+  .panel.isPanelOpenMobile {
+    transform: translateX(0);
+  }
+
+  .panelCloseButton {
+    display: inline-flex;
+  }
+
+  .panelBackdrop {
+    position: fixed;
+    inset: 0;
+    border: 0;
+    background: rgba(0, 0, 0, 0.42);
+    z-index: 50;
+    display: block;
   }
 
   .previewWrap {
-    min-height: 520px;
+    min-height: 560px;
+    padding-bottom: 7rem;
+  }
+
+  .previewStage {
+    width: 100%;
+    display: grid;
+    justify-items: center;
+    gap: 0.55rem;
+  }
+
+  .pageQuickActions {
+    position: static;
+    grid-auto-flow: column;
+    justify-content: center;
+  }
+
+  .pageQuickIndex {
+    position: static;
+    justify-self: center;
+  }
+
+  .pageQuickSplit {
+    position: static;
+    display: inline-flex;
+    width: auto;
+  }
+
+  .pageQuickSplit .splitActionMain {
+    width: auto;
+    min-width: 34px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .pageQuickSplit .splitActionToggle {
+    width: auto;
+    min-width: 2.1rem;
+    margin-top: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .pageQuickSplit .splitActionMenu {
+    right: 0;
+    left: auto;
+    top: calc(100% + 6px);
+    bottom: auto;
+  }
+
+  .elementLibraryLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .elementLibraryList {
+    max-height: 320px;
+  }
+
+  .mobileProjectMenuButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-start;
+    width: 2.1rem;
+    min-width: 2.1rem;
+    padding: 0.35rem;
+  }
+
+  .thumbnailBarSticky {
+    bottom: 6.2rem;
   }
 }
 

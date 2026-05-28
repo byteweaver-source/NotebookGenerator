@@ -28,6 +28,7 @@ type Orientation = 'portrait' | 'landscape'
 type BindingKey = 'none' | 'ringLeft' | 'ringTop' | 'booklet'
 type ElementKind = 'phone' | 'browser' | 'card' | 'form'
 type TextAlignOption = 'left' | 'center' | 'right' | 'distributed'
+type ElementLibraryCategory = 'all' | 'device' | 'layout' | 'content' | 'assets'
 
 type CustomElement = {
   id: string
@@ -71,12 +72,71 @@ const bindingLabels: Record<BindingKey, string> = {
   booklet: 'Piegatura a libretto',
 }
 
-const elementIconLabels: Record<ElementKind, { iconClass: string; title: string }> = {
-  phone: { iconClass: 'fa-solid fa-mobile-screen-button', title: 'Aggiungi telefono' },
-  browser: { iconClass: 'fa-solid fa-desktop', title: 'Aggiungi browser frame' },
-  card: { iconClass: 'fa-solid fa-address-card', title: 'Aggiungi card' },
-  form: { iconClass: 'fa-solid fa-clipboard-list', title: 'Aggiungi form' },
-}
+const elementLibraryTree: Array<{ id: ElementLibraryCategory; label: string }> = [
+  { id: 'all', label: 'Tutti' },
+  { id: 'device', label: 'Dispositivi' },
+  { id: 'layout', label: 'Layout' },
+  { id: 'content', label: 'Contenuto' },
+  { id: 'assets', label: 'Asset' },
+]
+
+const elementLibraryItems: Array<
+  {
+    id: string
+    category: ElementLibraryCategory
+    label: string
+    description: string
+    iconClass: string
+  } & (
+    | { action: 'preset'; kind: ElementKind }
+    | { action: 'uploadSvg' }
+  )
+> = [
+  {
+    id: 'phone',
+    category: 'device',
+    action: 'preset',
+    kind: 'phone',
+    label: 'Telefono',
+    description: 'Wireframe mobile verticale',
+    iconClass: 'fa-solid fa-mobile-screen-button',
+  },
+  {
+    id: 'browser',
+    category: 'device',
+    action: 'preset',
+    kind: 'browser',
+    label: 'Browser',
+    description: 'Frame desktop con top bar',
+    iconClass: 'fa-solid fa-desktop',
+  },
+  {
+    id: 'card',
+    category: 'content',
+    action: 'preset',
+    kind: 'card',
+    label: 'Card',
+    description: 'Blocco contenuto sintetico',
+    iconClass: 'fa-solid fa-address-card',
+  },
+  {
+    id: 'form',
+    category: 'layout',
+    action: 'preset',
+    kind: 'form',
+    label: 'Form',
+    description: 'Schema form con righe input',
+    iconClass: 'fa-solid fa-clipboard-list',
+  },
+  {
+    id: 'upload-svg',
+    category: 'assets',
+    action: 'uploadSvg',
+    label: 'SVG personalizzato',
+    description: 'Carica un elemento SVG',
+    iconClass: 'fa-solid fa-file-arrow-up',
+  },
+]
 
 const dialoghiParametricDefaultColors = [
   '#e76f51',
@@ -754,14 +814,11 @@ function CustomDropdown(props: {
 function App() {
   const [size, setSize] = useState<PageSizeKey>('A4')
   const [orientation, setOrientation] = useState<Orientation>('portrait')
-  const [template, setTemplate] = useState<TemplateKey>('uiDesktop')
   const [binding, setBinding] = useState<BindingKey>('ringLeft')
-  const [pages, setPages] = useState(8)
   const [duplexEnabled, setDuplexEnabled] = useState(false)
-  const [compositionEnabled, setCompositionEnabled] = useState(false)
-  const [compositionPages, setCompositionPages] = useState<PlannedPage[]>([])
-  const [compositionTemplateToAdd, setCompositionTemplateToAdd] =
-    useState<TemplateKey>('uiDesktop')
+  const [compositionPages, setCompositionPages] = useState<PlannedPage[]>([
+    { id: crypto.randomUUID(), template: 'uiDesktop' },
+  ])
   const [previewPageNumber, setPreviewPageNumber] = useState(1)
   const [headerOptions, setHeaderOptions] = useState<HeaderFooterOptions>({
     text: '',
@@ -779,30 +836,30 @@ function App() {
   const [customElementsByPage, setCustomElementsByPage] = useState<Record<string, CustomElement[]>>({})
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [dragState, setDragState] = useState<DragState | null>(null)
+  const [projectPanelOpenMobile, setProjectPanelOpenMobile] = useState(false)
+  const [parametricModalOpen, setParametricModalOpen] = useState(false)
+  const [pageActionMenuOpen, setPageActionMenuOpen] = useState(false)
+  const [elementLibraryOpen, setElementLibraryOpen] = useState(false)
+  const [elementLibraryCategory, setElementLibraryCategory] =
+    useState<ElementLibraryCategory>('all')
+  const [elementLibraryQuery, setElementLibraryQuery] = useState('')
 
   const svgRef = useRef<SVGSVGElement | null>(null)
   const uploadSvgInputRef = useRef<HTMLInputElement | null>(null)
+  const pageActionMenuRef = useRef<HTMLDivElement | null>(null)
 
   const page = useMemo(() => getPageDimensions(size, orientation), [size, orientation])
-  const totalPages = compositionEnabled
-    ? Math.max(1, compositionPages.length)
-    : Math.max(1, pages)
+  const totalPages = Math.max(1, compositionPages.length)
   const clampedPreviewPageNumber = Math.min(
     Math.max(previewPageNumber, 1),
     totalPages,
   )
   const previewPageIndex = clampedPreviewPageNumber - 1
-  const previewTemplates =
-    compositionEnabled && compositionPages.length > 0
-      ? compositionPages.map((item) => item.template)
-      : Array.from({ length: Math.max(1, pages) }, () => template)
-  const selectedCompositionPage =
-    compositionEnabled && compositionPages.length > 0
-      ? compositionPages[previewPageIndex] ?? null
-      : null
+  const previewTemplates = compositionPages.map((item) => item.template)
+  const selectedCompositionPage = compositionPages[previewPageIndex] ?? null
   const currentPageKey = selectedCompositionPage
     ? `comp-${selectedCompositionPage.id}`
-    : `page-${previewPageIndex + 1}`
+    : 'comp-fallback'
   const currentCustomElements = customElementsByPage[currentPageKey] ?? []
   const thumbnailGroups = duplexEnabled
     ? Array.from({ length: Math.ceil(previewTemplates.length / 2) }, (_, groupIndex) => {
@@ -818,10 +875,7 @@ function App() {
     : previewTemplates.map((groupTemplate, pageIndex) => [
         { template: groupTemplate, pageIndex, side: 'PAG' },
       ])
-  const activeTemplate =
-    compositionEnabled && compositionPages.length > 0
-      ? compositionPages[previewPageIndex]?.template ?? template
-      : template
+  const activeTemplate = compositionPages[previewPageIndex]?.template ?? 'blank'
   const dialoghiParametricActors = useMemo(
     () =>
       buildDialoghiParametricColors(
@@ -829,6 +883,24 @@ function App() {
         dialoghiParametricActorColors,
       ).map((color) => ({ color })),
     [dialoghiParametricActorColors, dialoghiParametricActorCount],
+  )
+  const filteredElementLibraryItems = useMemo(
+    () => {
+      const normalizedQuery = elementLibraryQuery.trim().toLowerCase()
+      return elementLibraryItems.filter((item) => {
+        const categoryMatches =
+          elementLibraryCategory === 'all' ? true : item.category === elementLibraryCategory
+        if (!categoryMatches) {
+          return false
+        }
+        if (!normalizedQuery) {
+          return true
+        }
+        const haystack = `${item.label} ${item.description}`.toLowerCase()
+        return haystack.includes(normalizedQuery)
+      })
+    },
+    [elementLibraryCategory, elementLibraryQuery],
   )
 
   const previewMargins = useMemo(
@@ -859,21 +931,10 @@ function App() {
     })
   }
 
-  function toggleComposition() {
-    setCompositionEnabled((prev) => {
-      const next = !prev
-      if (next && compositionPages.length === 0) {
-        setCompositionPages([{ id: crypto.randomUUID(), template }])
-        setPreviewPageNumber(1)
-      }
-      return next
-    })
-  }
-
   function addCompositionPage() {
     setCompositionPages((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), template: compositionTemplateToAdd },
+      { id: crypto.randomUUID(), template: 'blank' },
     ])
     setPreviewPageNumber((prev) => prev + 1)
   }
@@ -922,10 +983,11 @@ function App() {
     })
   }
 
-  function duplicateCurrentCompositionPage() {
+  function duplicateCurrentCompositionPageTimes(times: number) {
     if (!selectedCompositionPage) {
       return
     }
+    const safeTimes = Math.min(20, Math.max(1, Math.floor(times)))
     setCompositionPages((prev) => {
       const currentIndex = prev.findIndex(
         (item) => item.id === selectedCompositionPage.id,
@@ -933,12 +995,13 @@ function App() {
       if (currentIndex < 0) {
         return prev
       }
-      const clone: PlannedPage = {
+
+      const clones: PlannedPage[] = Array.from({ length: safeTimes }, () => ({
         id: crypto.randomUUID(),
         template: selectedCompositionPage.template,
-      }
+      }))
       const next = [...prev]
-      next.splice(currentIndex + 1, 0, clone)
+      next.splice(currentIndex + 1, 0, ...clones)
       setPreviewPageNumber(currentIndex + 2)
       return next
     })
@@ -1001,19 +1064,17 @@ function App() {
     }
     reader.readAsDataURL(file)
     event.target.value = ''
+    setElementLibraryOpen(false)
   }
 
-  function removeSelected() {
-    if (!selectedId) {
-      return
-    }
+  function removeElementById(elementId: string) {
     setCustomElementsByPage((prev) => ({
       ...prev,
       [currentPageKey]: (prev[currentPageKey] ?? []).filter(
-        (item) => item.id !== selectedId,
+        (item) => item.id !== elementId,
       ),
     }))
-    setSelectedId(null)
+    setSelectedId((prev) => (prev === elementId ? null : prev))
   }
 
   function handlePointerMove(event: ReactPointerEvent<SVGSVGElement>) {
@@ -1063,11 +1124,34 @@ function App() {
   }, [currentPageKey])
 
   useEffect(() => {
-    if (compositionEnabled && compositionPages.length === 0) {
-      setCompositionPages([{ id: crypto.randomUUID(), template }])
+    if (compositionPages.length === 0) {
+      setCompositionPages([{ id: crypto.randomUUID(), template: 'blank' }])
       setPreviewPageNumber(1)
     }
-  }, [compositionEnabled, compositionPages.length, template])
+  }, [compositionPages.length])
+
+  useEffect(() => {
+    if (activeTemplate === 'dialoghiParametric') {
+      setParametricModalOpen(true)
+    }
+  }, [activeTemplate])
+
+  useEffect(() => {
+    function onPointerDown(event: PointerEvent) {
+      if (!pageActionMenuRef.current) {
+        return
+      }
+      if (!pageActionMenuRef.current.contains(event.target as Node)) {
+        setPageActionMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+    }
+  }, [])
+
   const previewHeaderText = buildHeaderFooterText(
     headerOptions.text,
     clampedPreviewPageNumber,
@@ -1109,6 +1193,41 @@ function App() {
   }
 
   const previewPageNumberText = `${clampedPreviewPageNumber}/${totalPages}`
+
+  function handleExportPdf() {
+    exportPdf({
+      size,
+      orientation,
+      template: compositionPages[0]?.template ?? 'blank',
+      binding,
+      pages: compositionPages.length,
+      customElementsByPage,
+      compositionTemplates: compositionPages.map((item) => item.template),
+      compositionPageIds: compositionPages.map((item) => item.id),
+      duplexEnabled,
+      header: headerOptions,
+      footer: footerOptions,
+      dialoghiParametricActors,
+    })
+  }
+
+  function runPageMenuAction(action: () => void) {
+    action()
+    setPageActionMenuOpen(false)
+  }
+
+  function handleSelectElementLibraryItem(item: (typeof elementLibraryItems)[number]) {
+    if (item.action === 'preset') {
+      addElement(item.kind)
+      setElementLibraryOpen(false)
+      return
+    }
+
+    if (item.action === 'uploadSvg') {
+      setElementLibraryOpen(false)
+      uploadSvgInputRef.current?.click()
+    }
+  }
 
   function renderPreviewHeaderFooterLine(options: {
     text: string
@@ -1154,8 +1273,27 @@ function App() {
 
   return (
     <main className="layout">
-      <aside className="panel">
-        <h1>PageForge</h1>
+      {projectPanelOpenMobile && (
+        <button
+          type="button"
+          className="panelBackdrop"
+          aria-label="Chiudi impostazioni progetto"
+          onClick={() => setProjectPanelOpenMobile(false)}
+        />
+      )}
+
+      <aside className={`panel ${projectPanelOpenMobile ? 'isPanelOpenMobile' : ''}`}>
+        <div className="panelTopRow">
+          <h1>PageForge</h1>
+          <button
+            type="button"
+            className="smallButton panelCloseButton"
+            onClick={() => setProjectPanelOpenMobile(false)}
+          >
+            Chiudi
+          </button>
+        </div>
+        <div className="themeTag" aria-label="Area impostazioni progetto">Impostazioni progetto</div>
         <p>
           Generatore di pagine stampabili con template tecnici, mockup UI e
           rilegature per stampa.
@@ -1212,29 +1350,6 @@ function App() {
           />
         </div>
 
-        {!compositionEnabled && (
-          <div className="group groupedBox">
-            <label className="groupTitle">Impostazioni Generali Pagine</label>
-            <label htmlFor="template">Template generale</label>
-            <CustomDropdown
-              id="template"
-              value={template}
-              onChange={(value) => setTemplate(value as TemplateKey)}
-              sections={getTemplateSections(template)}
-            />
-
-            <label htmlFor="pages">Numero pagine PDF</label>
-            <input
-              id="pages"
-              type="number"
-              min={1}
-              max={300}
-              value={pages}
-              onChange={(event) => setPages(Number(event.target.value) || 1)}
-            />
-          </div>
-        )}
-
         <div className="group">
           <label className="checkboxRow">
             <input
@@ -1249,72 +1364,17 @@ function App() {
           )}
         </div>
 
-        <div className="group">
-          <label className="checkboxRow">
-            <input
-              type="checkbox"
-              checked={compositionEnabled}
-              onChange={toggleComposition}
-            />
-            Composizione quaderno con pagine diverse
-          </label>
-        </div>
-
-        {compositionEnabled && (
-          <div className="group">
-            <label>Aggiungi nuova pagina</label>
-
-            <div className="rowControls">
-              <CustomDropdown
-                value={compositionTemplateToAdd}
-                onChange={(value) => setCompositionTemplateToAdd(value as TemplateKey)}
-                sections={getTemplateSections(compositionTemplateToAdd)}
-              />
-              <button type="button" className="smallButton" onClick={addCompositionPage}>
-                Aggiungi pagina
-              </button>
-            </div>
-            <p className="hint">Usa la barra miniature sotto per selezionare la pagina.</p>
-          </div>
-        )}
-
-        {compositionEnabled && (
-          <div className="group">
-            <p className="hint">Template generale e numero pagine sono nascosti in composizione custom.</p>
-          </div>
-        )}
-
         {activeTemplate === 'dialoghiParametric' && (
           <div className="group groupedBox">
             <label className="groupTitle">Dialoghi Parametrico</label>
-
-            <label htmlFor="dialoghiParametricActors">Numero attori</label>
-            <input
-              id="dialoghiParametricActors"
-              type="number"
-              min={2}
-              max={8}
-              value={dialoghiParametricActorCount}
-              onChange={(event) =>
-                setDialoghiParametricActorsCount(Number(event.target.value) || 2)
-              }
-            />
-
-            {dialoghiParametricActors.map((actor, actorIndex) => (
-              <div key={`actor-color-${actorIndex}`} className="actorColorRow">
-                <label htmlFor={`actorColor${actorIndex}`}>Attore {actorIndex + 1}</label>
-                <input
-                  id={`actorColor${actorIndex}`}
-                  type="color"
-                  value={actor.color}
-                  onChange={(event) =>
-                    setDialoghiParametricActorColor(actorIndex, event.target.value)
-                  }
-                />
-              </div>
-            ))}
-
-            <p className="hint">Ordine ciclico automatico: A1, A2, ... fino a riempire la pagina.</p>
+            <button
+              type="button"
+              className="smallButton"
+              onClick={() => setParametricModalOpen(true)}
+            >
+              Apri impostazioni parametriche
+            </button>
+            <p className="hint">Riapri questa modale quando vuoi tramite il pulsante gear.</p>
           </div>
         )}
 
@@ -1404,33 +1464,6 @@ function App() {
           />
         </div>
 
-        <button
-          type="button"
-          className="primaryButton"
-          onClick={() =>
-            exportPdf({
-              size,
-              orientation,
-              template,
-              binding,
-              pages,
-              customElementsByPage,
-              compositionTemplates: compositionEnabled
-                ? compositionPages.map((item) => item.template)
-                : null,
-              compositionPageIds: compositionEnabled
-                ? compositionPages.map((item) => item.id)
-                : null,
-              duplexEnabled,
-              header: headerOptions,
-              footer: footerOptions,
-              dialoghiParametricActors,
-            })
-          }
-        >
-          Esporta PDF
-        </button>
-
         <p className="hint">
           Area utile: {Math.round(previewContent.width)} x {Math.round(previewContent.height)} mm
         </p>
@@ -1443,12 +1476,32 @@ function App() {
       </aside>
 
       <section className="previewWrap" aria-label="Anteprima pagina">
-        <div className="previewTopToolbar">
-          <span className="selectedPageLabel">
-            Pagina corrente {previewPageIndex + 1} / {totalPages}
-          </span>
+        <button
+          type="button"
+          className="iconToolButton mobileProjectMenuButton"
+          onClick={() => setProjectPanelOpenMobile(true)}
+          title="Apri impostazioni progetto"
+          aria-label="Apri impostazioni progetto"
+        >
+          <i className="fa-solid fa-bars" aria-hidden="true" />
+        </button>
 
-          {compositionEnabled && selectedCompositionPage ? (
+        <div className="previewTopToolbar">
+          <div className="themeTag themeTagInline" aria-label="Area pagina corrente">Pagina corrente</div>
+          <div className="toolbarTheme toolbarTheme-page">
+            {activeTemplate === 'dialoghiParametric' && (
+              <button
+                type="button"
+                className="smallButton"
+                onClick={() => setParametricModalOpen(true)}
+                title="Apri impostazioni template parametrico"
+              >
+                <i className="fa-solid fa-gear" aria-hidden="true" /> Parametri
+              </button>
+            )}
+          </div>
+
+          {selectedCompositionPage ? (
             <CustomDropdown
               value={selectedCompositionPage.template}
               onChange={(value) => updateCurrentCompositionTemplate(value as TemplateKey)}
@@ -1456,87 +1509,13 @@ function App() {
             />
           ) : (
             <CustomDropdown
-              value={template}
-              onChange={(value) => setTemplate(value as TemplateKey)}
-              sections={getTemplateSections(template)}
-              disabled={compositionEnabled}
+              value={activeTemplate}
+              onChange={(value) => updateCurrentCompositionTemplate(value as TemplateKey)}
+              sections={getTemplateSections(activeTemplate)}
+              disabled
             />
           )}
 
-          {compositionEnabled && selectedCompositionPage && (
-            <div className="topActions">
-              <button
-                type="button"
-                className="smallButton"
-                onClick={() => moveCurrentCompositionPage(-1)}
-                disabled={previewPageIndex === 0}
-              >
-                Su
-              </button>
-              <button
-                type="button"
-                className="smallButton"
-                onClick={() => moveCurrentCompositionPage(1)}
-                disabled={previewPageIndex === totalPages - 1}
-              >
-                Giu
-              </button>
-              <button
-                type="button"
-                className="smallButton"
-                onClick={duplicateCurrentCompositionPage}
-              >
-                Duplica
-              </button>
-              <button
-                type="button"
-                className="smallButton danger"
-                onClick={removeCurrentCompositionPage}
-                disabled={compositionPages.length <= 1}
-              >
-                Elimina
-              </button>
-            </div>
-          )}
-
-          <div className="iconToolbar" aria-label="Inserimento elementi custom UI">
-            {(Object.keys(elementIconLabels) as ElementKind[]).map((kind) => (
-              <button
-                key={kind}
-                type="button"
-                className="iconToolButton"
-                title={elementIconLabels[kind].title}
-                onClick={() => addElement(kind)}
-                disabled={!canDragElements}
-              >
-                <span className="iconShort" aria-hidden="true">
-                  <i className={elementIconLabels[kind].iconClass} />
-                </span>
-              </button>
-            ))}
-              <button
-                type="button"
-                className="iconToolButton"
-                title="Carica elemento SVG"
-                onClick={() => uploadSvgInputRef.current?.click()}
-                disabled={!canDragElements}
-              >
-                <span className="iconShort" aria-hidden="true">
-                  <i className="fa-solid fa-file-arrow-up" />
-                </span>
-              </button>
-            <button
-              type="button"
-              className="iconToolButton danger"
-              title="Elimina selezionato"
-              onClick={removeSelected}
-              disabled={!selectedId}
-            >
-              <span className="iconShort" aria-hidden="true">
-                <i className="fa-solid fa-trash" />
-              </span>
-            </button>
-          </div>
         </div>
 
         <input
@@ -1547,18 +1526,23 @@ function App() {
           onChange={handleSvgUpload}
         />
 
-        <svg
-          ref={svgRef}
-          className="preview"
-          viewBox={`0 0 ${page.width} ${page.height}`}
-          width={previewWidth}
-          height={previewHeight}
-          role="img"
-          aria-label="Anteprima del template"
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerUp}
-        >
+        <div className="previewStage">
+          <div className="pageQuickIndex" aria-label="Pagina corrente">
+            {previewPageIndex + 1}/{totalPages}
+          </div>
+
+          <svg
+            ref={svgRef}
+            className="preview"
+            viewBox={`0 0 ${page.width} ${page.height}`}
+            width={previewWidth}
+            height={previewHeight}
+            role="img"
+            aria-label="Anteprima del template"
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerUp}
+          >
           <defs>
             <pattern id="p-dots" width="5" height="5" patternUnits="userSpaceOnUse">
               <circle cx="2.5" cy="2.5" r="0.45" fill="#b9bdc4" />
@@ -2137,30 +2121,71 @@ function App() {
 
           <g>
             {currentCustomElements.map((element) => (
-              <CustomElementShape
-                key={element.id}
-                element={element}
-                selected={selectedId === element.id}
-                onPointerDown={(event) => {
-                  if (!canDragElements || !svgRef.current) {
-                    return
-                  }
-                  event.preventDefault()
-                  event.stopPropagation()
+              <g key={element.id}>
+                <CustomElementShape
+                  element={element}
+                  selected={selectedId === element.id}
+                  onPointerDown={(event) => {
+                    if (!canDragElements || !svgRef.current) {
+                      return
+                    }
+                    event.preventDefault()
+                    event.stopPropagation()
 
-                  const point = screenPointToSvg(event, svgRef.current)
-                  if (!point) {
-                    return
-                  }
+                    const point = screenPointToSvg(event, svgRef.current)
+                    if (!point) {
+                      return
+                    }
 
-                  setSelectedId(element.id)
-                  setDragState({
-                    id: element.id,
-                    pointerOffsetX: point.x - element.x,
-                    pointerOffsetY: point.y - element.y,
-                  })
-                }}
-              />
+                    setSelectedId(element.id)
+                    setDragState({
+                      id: element.id,
+                      pointerOffsetX: point.x - element.x,
+                      pointerOffsetY: point.y - element.y,
+                    })
+                  }}
+                />
+
+                {selectedId === element.id && (
+                  <g
+                    role="button"
+                    aria-label="Elimina elemento selezionato"
+                    onPointerDown={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      removeElementById(element.id)
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <circle
+                      cx={element.x + element.width + 1}
+                      cy={element.y - 1}
+                      r="2.35"
+                      fill="#b7323d"
+                      stroke="#ffe4e7"
+                      strokeWidth="0.35"
+                    />
+                    <line
+                      x1={element.x + element.width - 0.15}
+                      y1={element.y - 2.15}
+                      x2={element.x + element.width + 2.15}
+                      y2={element.y + 0.15}
+                      stroke="#ffffff"
+                      strokeWidth="0.35"
+                      strokeLinecap="round"
+                    />
+                    <line
+                      x1={element.x + element.width + 2.15}
+                      y1={element.y - 2.15}
+                      x2={element.x + element.width - 0.15}
+                      y2={element.y + 0.15}
+                      stroke="#ffffff"
+                      strokeWidth="0.35"
+                      strokeLinecap="round"
+                    />
+                  </g>
+                )}
+              </g>
             ))}
           </g>
 
@@ -2190,10 +2215,118 @@ function App() {
             strokeWidth="0.25"
             strokeDasharray="2 2"
           />
-        </svg>
+          </svg>
+
+          {selectedCompositionPage && (
+            <div className="pageQuickActions" aria-label="Azioni pagina">
+              <button
+                type="button"
+                className="iconToolButton"
+                title="Apri libreria elementi"
+                aria-label="Apri libreria elementi"
+                onClick={() => setElementLibraryOpen(true)}
+                disabled={!canDragElements}
+              >
+                <span className="iconShort" aria-hidden="true">
+                  <i className="fa-solid fa-shapes" />
+                </span>
+              </button>
+
+              <div className="splitAction pageQuickSplit" ref={pageActionMenuRef}>
+                <button
+                  type="button"
+                  className="smallButton splitActionMain"
+                  onClick={addCompositionPage}
+                  title="Aggiungi pagina blank"
+                  aria-label="Aggiungi pagina blank"
+                >
+                  <i className="fa-solid fa-plus" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="smallButton splitActionToggle"
+                  aria-label="Apri menu azioni pagina"
+                  aria-expanded={pageActionMenuOpen}
+                  onClick={() => setPageActionMenuOpen((prev) => !prev)}
+                >
+                  ▾
+                </button>
+
+                {pageActionMenuOpen && (
+                  <div className="splitActionMenu" role="menu" aria-label="Azioni pagina rapide">
+                    <button
+                      type="button"
+                      className="splitActionMenuItem"
+                      role="menuitem"
+                      disabled={!selectedCompositionPage}
+                      onClick={() => runPageMenuAction(() => duplicateCurrentCompositionPageTimes(1))}
+                    >
+                      Duplica +1
+                    </button>
+                    <button
+                      type="button"
+                      className="splitActionMenuItem"
+                      role="menuitem"
+                      disabled={!selectedCompositionPage}
+                      onClick={() => runPageMenuAction(() => duplicateCurrentCompositionPageTimes(5))}
+                    >
+                      Duplica +5
+                    </button>
+                    <button
+                      type="button"
+                      className="splitActionMenuItem"
+                      role="menuitem"
+                      disabled={!selectedCompositionPage}
+                      onClick={() => runPageMenuAction(() => duplicateCurrentCompositionPageTimes(10))}
+                    >
+                      Duplica +10
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                className="iconToolButton"
+                title="Sposta pagina su"
+                aria-label="Sposta pagina su"
+                onClick={() => moveCurrentCompositionPage(-1)}
+                disabled={previewPageIndex === 0}
+              >
+                <span className="iconShort" aria-hidden="true">
+                  <i className="fa-solid fa-angle-up" />
+                </span>
+              </button>
+              <button
+                type="button"
+                className="iconToolButton"
+                title="Sposta pagina giu"
+                aria-label="Sposta pagina giu"
+                onClick={() => moveCurrentCompositionPage(1)}
+                disabled={previewPageIndex === totalPages - 1}
+              >
+                <span className="iconShort" aria-hidden="true">
+                  <i className="fa-solid fa-angle-down" />
+                </span>
+              </button>
+              <button
+                type="button"
+                className="iconToolButton danger"
+                title="Elimina pagina"
+                aria-label="Elimina pagina"
+                onClick={removeCurrentCompositionPage}
+                disabled={compositionPages.length <= 1}
+              >
+                <span className="iconShort" aria-hidden="true">
+                  <i className="fa-solid fa-trash" />
+                </span>
+              </button>
+            </div>
+          )}
+        </div>
 
         {totalPages > 1 && (
-          <div className="thumbnailBar" aria-label="Miniature pagine">
+          <div className="thumbnailBar thumbnailBarSticky" aria-label="Miniature pagine">
             {thumbnailGroups.map((group, groupIndex) => (
               <div
                 key={`group-${groupIndex}`}
@@ -2288,7 +2421,130 @@ function App() {
             ))}
           </div>
         )}
+
+        <div className="exportDock" role="region" aria-label="Azioni notebook">
+          <div className="themeTag themeTagInline" aria-label="Area output notebook">Output notebook</div>
+          <div className="exportDockMeta">
+            <span>Notebook: {totalPages} pagine</span>
+            <span>Template corrente: {templateLabels[activeTemplate]}</span>
+          </div>
+          <button type="button" className="primaryButton exportDockButton" onClick={handleExportPdf}>
+            Esporta PDF
+          </button>
+        </div>
       </section>
+
+      {activeTemplate === 'dialoghiParametric' && parametricModalOpen && (
+        <div className="floatingModalLayer" role="dialog" aria-modal="true" aria-label="Impostazioni dialoghi parametrici">
+          <div className="floatingModal">
+            <div className="floatingModalHeader">
+              <strong>Dialoghi Parametrico</strong>
+              <button
+                type="button"
+                className="smallButton"
+                onClick={() => setParametricModalOpen(false)}
+              >
+                Chiudi
+              </button>
+            </div>
+
+            <label htmlFor="dialoghiParametricActors">Numero attori</label>
+            <input
+              id="dialoghiParametricActors"
+              type="number"
+              min={2}
+              max={8}
+              value={dialoghiParametricActorCount}
+              onChange={(event) =>
+                setDialoghiParametricActorsCount(Number(event.target.value) || 2)
+              }
+            />
+
+            {dialoghiParametricActors.map((actor, actorIndex) => (
+              <div key={`actor-color-modal-${actorIndex}`} className="actorColorRow">
+                <label htmlFor={`actorColorModal${actorIndex}`}>Attore {actorIndex + 1}</label>
+                <input
+                  id={`actorColorModal${actorIndex}`}
+                  type="color"
+                  value={actor.color}
+                  onChange={(event) =>
+                    setDialoghiParametricActorColor(actorIndex, event.target.value)
+                  }
+                />
+              </div>
+            ))}
+
+            <p className="hint">Ordine ciclico automatico: A1, A2, ... fino a riempire la pagina.</p>
+          </div>
+        </div>
+      )}
+
+      {elementLibraryOpen && canDragElements && (
+        <div className="floatingModalLayer" role="dialog" aria-modal="true" aria-label="Libreria elementi custom">
+          <div className="floatingModal elementLibraryModal">
+            <div className="floatingModalHeader">
+              <strong>Libreria elementi</strong>
+              <button
+                type="button"
+                className="smallButton"
+                onClick={() => setElementLibraryOpen(false)}
+              >
+                Chiudi
+              </button>
+            </div>
+
+            <div className="elementLibraryLayout">
+              <aside className="elementLibraryTree" aria-label="Categorie elementi">
+                {elementLibraryTree.map((node) => (
+                  <button
+                    key={node.id}
+                    type="button"
+                    className={`elementTreeNode ${node.id === elementLibraryCategory ? 'isActive' : ''}`}
+                    onClick={() => setElementLibraryCategory(node.id)}
+                  >
+                    {node.label}
+                  </button>
+                ))}
+              </aside>
+
+              <div className="elementLibraryList" aria-label="Elementi disponibili">
+                <label htmlFor="elementLibrarySearch" className="elementLibrarySearchLabel">
+                  Cerca elemento
+                </label>
+                <input
+                  id="elementLibrarySearch"
+                  className="elementLibrarySearch"
+                  type="search"
+                  placeholder="Cerca per nome o descrizione"
+                  value={elementLibraryQuery}
+                  onChange={(event) => setElementLibraryQuery(event.target.value)}
+                />
+                {filteredElementLibraryItems.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className="elementLibraryItem"
+                    onClick={() => handleSelectElementLibraryItem(item)}
+                  >
+                    <span className="elementLibraryIcon" aria-hidden="true">
+                      <i className={item.iconClass} />
+                    </span>
+                    <span className="elementLibraryText">
+                      <strong>{item.label}</strong>
+                      <span>{item.description}</span>
+                    </span>
+                  </button>
+                ))}
+                {filteredElementLibraryItems.length === 0 && (
+                  <p className="hint">
+                    Nessun elemento trovato per questa categoria e ricerca.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
