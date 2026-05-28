@@ -15,6 +15,14 @@ import {
   templateLabels,
 } from './templates/config'
 import { drawTemplateOnPdf } from './templates/pdf/drawTemplateOnPdf'
+import { PageQuickActionsRail } from './components/preview/PageQuickActionsRail'
+import { PageQuickIndexBadge } from './components/preview/PageQuickIndexBadge'
+import { GroupCard } from './components/ui/GroupCard'
+import { ToolbarCard } from './components/ui/ToolbarCard'
+import { ModalShell } from './components/ui/ModalShell'
+import { ExportDock } from './components/ui/ExportDock'
+import { ParametricDialogContent } from './components/ui/ParametricDialogContent'
+import { ElementLibraryContent } from './components/ui/ElementLibraryContent'
 
 const dialoghiRowCounts: Partial<Record<TemplateKey, number>> = {
   dialoghi2: 2,
@@ -1365,8 +1373,7 @@ function App() {
         </div>
 
         {activeTemplate === 'dialoghiParametric' && (
-          <div className="group groupedBox">
-            <label className="groupTitle">Dialoghi Parametrico</label>
+          <GroupCard title="Dialoghi Parametrico">
             <button
               type="button"
               className="smallButton"
@@ -1375,11 +1382,10 @@ function App() {
               Apri impostazioni parametriche
             </button>
             <p className="hint">Riapri questa modale quando vuoi tramite il pulsante gear.</p>
-          </div>
+          </GroupCard>
         )}
 
-        <div className="group groupedBox">
-          <label className="groupTitle">Header / Footer</label>
+        <GroupCard title="Header / Footer">
 
           <label htmlFor="headerText">Header testo</label>
           <input
@@ -1462,7 +1468,7 @@ function App() {
               },
             ]}
           />
-        </div>
+        </GroupCard>
 
         <p className="hint">
           Area utile: {Math.round(previewContent.width)} x {Math.round(previewContent.height)} mm
@@ -1486,7 +1492,7 @@ function App() {
           <i className="fa-solid fa-bars" aria-hidden="true" />
         </button>
 
-        <div className="previewTopToolbar">
+        <ToolbarCard>
           <div className="themeTag themeTagInline" aria-label="Area pagina corrente">Pagina corrente</div>
           <div className="toolbarTheme toolbarTheme-page">
             {activeTemplate === 'dialoghiParametric' && (
@@ -1516,7 +1522,7 @@ function App() {
             />
           )}
 
-        </div>
+        </ToolbarCard>
 
         <input
           ref={uploadSvgInputRef}
@@ -1527,9 +1533,7 @@ function App() {
         />
 
         <div className="previewStage">
-          <div className="pageQuickIndex" aria-label="Pagina corrente">
-            {previewPageIndex + 1}/{totalPages}
-          </div>
+          <PageQuickIndexBadge currentPage={previewPageIndex + 1} totalPages={totalPages} />
 
           <svg
             ref={svgRef}
@@ -2218,110 +2222,24 @@ function App() {
           </svg>
 
           {selectedCompositionPage && (
-            <div className="pageQuickActions" aria-label="Azioni pagina">
-              <button
-                type="button"
-                className="iconToolButton"
-                title="Apri libreria elementi"
-                aria-label="Apri libreria elementi"
-                onClick={() => setElementLibraryOpen(true)}
-                disabled={!canDragElements}
-              >
-                <span className="iconShort" aria-hidden="true">
-                  <i className="fa-solid fa-shapes" />
-                </span>
-              </button>
-
-              <div className="splitAction pageQuickSplit" ref={pageActionMenuRef}>
-                <button
-                  type="button"
-                  className="smallButton splitActionMain"
-                  onClick={addCompositionPage}
-                  title="Aggiungi pagina blank"
-                  aria-label="Aggiungi pagina blank"
-                >
-                  <i className="fa-solid fa-plus" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className="smallButton splitActionToggle"
-                  aria-label="Apri menu azioni pagina"
-                  aria-expanded={pageActionMenuOpen}
-                  onClick={() => setPageActionMenuOpen((prev) => !prev)}
-                >
-                  ▾
-                </button>
-
-                {pageActionMenuOpen && (
-                  <div className="splitActionMenu" role="menu" aria-label="Azioni pagina rapide">
-                    <button
-                      type="button"
-                      className="splitActionMenuItem"
-                      role="menuitem"
-                      disabled={!selectedCompositionPage}
-                      onClick={() => runPageMenuAction(() => duplicateCurrentCompositionPageTimes(1))}
-                    >
-                      Duplica +1
-                    </button>
-                    <button
-                      type="button"
-                      className="splitActionMenuItem"
-                      role="menuitem"
-                      disabled={!selectedCompositionPage}
-                      onClick={() => runPageMenuAction(() => duplicateCurrentCompositionPageTimes(5))}
-                    >
-                      Duplica +5
-                    </button>
-                    <button
-                      type="button"
-                      className="splitActionMenuItem"
-                      role="menuitem"
-                      disabled={!selectedCompositionPage}
-                      onClick={() => runPageMenuAction(() => duplicateCurrentCompositionPageTimes(10))}
-                    >
-                      Duplica +10
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <button
-                type="button"
-                className="iconToolButton"
-                title="Sposta pagina su"
-                aria-label="Sposta pagina su"
-                onClick={() => moveCurrentCompositionPage(-1)}
-                disabled={previewPageIndex === 0}
-              >
-                <span className="iconShort" aria-hidden="true">
-                  <i className="fa-solid fa-angle-up" />
-                </span>
-              </button>
-              <button
-                type="button"
-                className="iconToolButton"
-                title="Sposta pagina giu"
-                aria-label="Sposta pagina giu"
-                onClick={() => moveCurrentCompositionPage(1)}
-                disabled={previewPageIndex === totalPages - 1}
-              >
-                <span className="iconShort" aria-hidden="true">
-                  <i className="fa-solid fa-angle-down" />
-                </span>
-              </button>
-              <button
-                type="button"
-                className="iconToolButton danger"
-                title="Elimina pagina"
-                aria-label="Elimina pagina"
-                onClick={removeCurrentCompositionPage}
-                disabled={compositionPages.length <= 1}
-              >
-                <span className="iconShort" aria-hidden="true">
-                  <i className="fa-solid fa-trash" />
-                </span>
-              </button>
-            </div>
+            <PageQuickActionsRail
+              canDragElements={canDragElements}
+              pageActionMenuOpen={pageActionMenuOpen}
+              pageActionMenuRef={pageActionMenuRef}
+              duplicateDisabled={!selectedCompositionPage}
+              disableMoveUp={previewPageIndex === 0}
+              disableMoveDown={previewPageIndex === totalPages - 1}
+              disableDelete={compositionPages.length <= 1}
+              onOpenElementLibrary={() => setElementLibraryOpen(true)}
+              onAddBlankPage={addCompositionPage}
+              onTogglePageActionMenu={() => setPageActionMenuOpen((prev) => !prev)}
+              onDuplicateOne={() => runPageMenuAction(() => duplicateCurrentCompositionPageTimes(1))}
+              onDuplicateFive={() => runPageMenuAction(() => duplicateCurrentCompositionPageTimes(5))}
+              onDuplicateTen={() => runPageMenuAction(() => duplicateCurrentCompositionPageTimes(10))}
+              onMoveUp={() => moveCurrentCompositionPage(-1)}
+              onMoveDown={() => moveCurrentCompositionPage(1)}
+              onDelete={removeCurrentCompositionPage}
+            />
           )}
         </div>
 
@@ -2422,128 +2340,51 @@ function App() {
           </div>
         )}
 
-        <div className="exportDock" role="region" aria-label="Azioni notebook">
-          <div className="themeTag themeTagInline" aria-label="Area output notebook">Output notebook</div>
-          <div className="exportDockMeta">
-            <span>Notebook: {totalPages} pagine</span>
-            <span>Template corrente: {templateLabels[activeTemplate]}</span>
-          </div>
-          <button type="button" className="primaryButton exportDockButton" onClick={handleExportPdf}>
-            Esporta PDF
-          </button>
-        </div>
+        <ExportDock
+          totalPages={totalPages}
+          activeTemplateLabel={templateLabels[activeTemplate]}
+          onExport={handleExportPdf}
+        />
       </section>
 
       {activeTemplate === 'dialoghiParametric' && parametricModalOpen && (
-        <div className="floatingModalLayer" role="dialog" aria-modal="true" aria-label="Impostazioni dialoghi parametrici">
-          <div className="floatingModal">
-            <div className="floatingModalHeader">
-              <strong>Dialoghi Parametrico</strong>
-              <button
-                type="button"
-                className="smallButton"
-                onClick={() => setParametricModalOpen(false)}
-              >
-                Chiudi
-              </button>
-            </div>
-
-            <label htmlFor="dialoghiParametricActors">Numero attori</label>
-            <input
-              id="dialoghiParametricActors"
-              type="number"
-              min={2}
-              max={8}
-              value={dialoghiParametricActorCount}
-              onChange={(event) =>
-                setDialoghiParametricActorsCount(Number(event.target.value) || 2)
-              }
-            />
-
-            {dialoghiParametricActors.map((actor, actorIndex) => (
-              <div key={`actor-color-modal-${actorIndex}`} className="actorColorRow">
-                <label htmlFor={`actorColorModal${actorIndex}`}>Attore {actorIndex + 1}</label>
-                <input
-                  id={`actorColorModal${actorIndex}`}
-                  type="color"
-                  value={actor.color}
-                  onChange={(event) =>
-                    setDialoghiParametricActorColor(actorIndex, event.target.value)
-                  }
-                />
-              </div>
-            ))}
-
-            <p className="hint">Ordine ciclico automatico: A1, A2, ... fino a riempire la pagina.</p>
-          </div>
-        </div>
+        <ModalShell
+          title="Dialoghi Parametrico"
+          ariaLabel="Impostazioni dialoghi parametrici"
+          onClose={() => setParametricModalOpen(false)}
+        >
+          <ParametricDialogContent
+            actorCount={dialoghiParametricActorCount}
+            actors={dialoghiParametricActors}
+            onActorCountChange={setDialoghiParametricActorsCount}
+            onActorColorChange={setDialoghiParametricActorColor}
+          />
+        </ModalShell>
       )}
 
       {elementLibraryOpen && canDragElements && (
-        <div className="floatingModalLayer" role="dialog" aria-modal="true" aria-label="Libreria elementi custom">
-          <div className="floatingModal elementLibraryModal">
-            <div className="floatingModalHeader">
-              <strong>Libreria elementi</strong>
-              <button
-                type="button"
-                className="smallButton"
-                onClick={() => setElementLibraryOpen(false)}
-              >
-                Chiudi
-              </button>
-            </div>
-
-            <div className="elementLibraryLayout">
-              <aside className="elementLibraryTree" aria-label="Categorie elementi">
-                {elementLibraryTree.map((node) => (
-                  <button
-                    key={node.id}
-                    type="button"
-                    className={`elementTreeNode ${node.id === elementLibraryCategory ? 'isActive' : ''}`}
-                    onClick={() => setElementLibraryCategory(node.id)}
-                  >
-                    {node.label}
-                  </button>
-                ))}
-              </aside>
-
-              <div className="elementLibraryList" aria-label="Elementi disponibili">
-                <label htmlFor="elementLibrarySearch" className="elementLibrarySearchLabel">
-                  Cerca elemento
-                </label>
-                <input
-                  id="elementLibrarySearch"
-                  className="elementLibrarySearch"
-                  type="search"
-                  placeholder="Cerca per nome o descrizione"
-                  value={elementLibraryQuery}
-                  onChange={(event) => setElementLibraryQuery(event.target.value)}
-                />
-                {filteredElementLibraryItems.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className="elementLibraryItem"
-                    onClick={() => handleSelectElementLibraryItem(item)}
-                  >
-                    <span className="elementLibraryIcon" aria-hidden="true">
-                      <i className={item.iconClass} />
-                    </span>
-                    <span className="elementLibraryText">
-                      <strong>{item.label}</strong>
-                      <span>{item.description}</span>
-                    </span>
-                  </button>
-                ))}
-                {filteredElementLibraryItems.length === 0 && (
-                  <p className="hint">
-                    Nessun elemento trovato per questa categoria e ricerca.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <ModalShell
+          title="Libreria elementi"
+          ariaLabel="Libreria elementi custom"
+          className="elementLibraryModal"
+          onClose={() => setElementLibraryOpen(false)}
+        >
+          <ElementLibraryContent
+            categories={elementLibraryTree}
+            selectedCategory={elementLibraryCategory}
+            onSelectCategory={(categoryId) => setElementLibraryCategory(categoryId as ElementLibraryCategory)}
+            query={elementLibraryQuery}
+            onQueryChange={setElementLibraryQuery}
+            items={filteredElementLibraryItems}
+            onSelectItem={(itemId) => {
+              const selectedItem = filteredElementLibraryItems.find((item) => item.id === itemId)
+              if (!selectedItem) {
+                return
+              }
+              handleSelectElementLibraryItem(selectedItem)
+            }}
+          />
+        </ModalShell>
       )}
     </main>
   )
