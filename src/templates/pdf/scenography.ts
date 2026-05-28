@@ -1,6 +1,6 @@
 import { rgb, type PDFPage } from 'pdf-lib'
 import type { MmRect } from '../types'
-import { mmToPt } from './utils'
+import { mmToPt, roundedRectPath } from './utils'
 
 const frameColor = rgb(0.53, 0.56, 0.61)
 const fillColor = rgb(0.97, 0.98, 0.99)
@@ -14,6 +14,10 @@ const defaultDialoghiParametricColors = [
   '#b56576',
   '#577590',
 ]
+const ACTOR_HEAD_STROKE_MM = 0.4
+// Open curved strokes appear optically lighter than closed circles in PDF renderers.
+// Slightly increase shoulder stroke to match the head outline visually.
+const ACTOR_SHOULDER_STROKE_MM = 0.4
 const dialoghiRowCounts = {
   dialoghi2: 2,
   dialoghi3: 3,
@@ -79,6 +83,7 @@ export function drawScenographyTemplatePdf(
 ): void {
   const pageHeightMm = page.getSize().height / 2.8346456693
   const mmScale = mmToPt(1)
+  const toScaledPathStrokeWidth = (thicknessMm: number) => mmToPt(thicknessMm) / mmScale
   const drawDialogHeaderLine = (rowX: number, topY: number, rowWidth: number) => {
     const headerY = topY + 5.2
     const headerLineStartX = rowX + 22
@@ -122,26 +127,19 @@ export function drawScenographyTemplatePdf(
         y: mmToPt(pageHeightMm - headCenterY),
         size: mmToPt(headRadius),
         borderColor: frameColor,
-        borderWidth: mmToPt(0.4),
+        borderWidth: mmToPt(ACTOR_HEAD_STROKE_MM),
       })
 
-      page.drawLine({
-        start: { x: mmToPt(centerX - shoulderHalf), y: mmToPt(pageHeightMm - shoulderY) },
-        end: { x: mmToPt(centerX), y: mmToPt(pageHeightMm - (shoulderY - 5)) },
-        thickness: mmToPt(0.4),
-        color: frameColor,
-      })
-      page.drawLine({
-        start: { x: mmToPt(centerX), y: mmToPt(pageHeightMm - (shoulderY - 5)) },
-        end: { x: mmToPt(centerX + shoulderHalf), y: mmToPt(pageHeightMm - shoulderY) },
-        thickness: mmToPt(0.4),
-        color: frameColor,
-      })
-      page.drawLine({
-        start: { x: mmToPt(centerX - shoulderHalf + 2), y: mmToPt(pageHeightMm - (shoulderY + 2.5)) },
-        end: { x: mmToPt(centerX + shoulderHalf - 2), y: mmToPt(pageHeightMm - (shoulderY + 2.5)) },
-        thickness: mmToPt(0.25),
-        color: frameColor,
+      const shoulderCurvePath = [
+        `M ${centerX - shoulderHalf} ${shoulderY}`,
+        `Q ${centerX} ${shoulderY - 5} ${centerX + shoulderHalf} ${shoulderY}`,
+      ].join(' ')
+      page.drawSvgPath(shoulderCurvePath, {
+        x: 0,
+        y: mmToPt(pageHeightMm),
+        scale: mmScale,
+        borderColor: frameColor,
+        borderWidth: toScaledPathStrokeWidth(ACTOR_SHOULDER_STROKE_MM),
       })
 
       page.drawLine({
@@ -283,11 +281,10 @@ export function drawScenographyTemplatePdf(
       const splashColor = mixRgbWithWhite(actorColor, 0.72)
       const badgeColor = hexToRgbColor(actorColor)
 
-      page.drawRectangle({
+      page.drawSvgPath(roundedRectPath(actorWidth - 2, 16, 3.5), {
         x: mmToPt(x + 1),
-        y: mmToPt(pageHeightMm - (y + 20.5)),
-        width: mmToPt(actorWidth - 2),
-        height: mmToPt(16),
+        y: mmToPt(pageHeightMm - (y + 4.5)),
+        scale: mmScale,
         color: splashColor,
       })
 
@@ -296,26 +293,19 @@ export function drawScenographyTemplatePdf(
         y: mmToPt(pageHeightMm - headCenterY),
         size: mmToPt(headRadius),
         borderColor: frameColor,
-        borderWidth: mmToPt(0.4),
+        borderWidth: mmToPt(ACTOR_HEAD_STROKE_MM),
       })
 
-      page.drawLine({
-        start: { x: mmToPt(centerX - shoulderHalf), y: mmToPt(pageHeightMm - shoulderY) },
-        end: { x: mmToPt(centerX), y: mmToPt(pageHeightMm - (shoulderY - 5)) },
-        thickness: mmToPt(0.4),
-        color: frameColor,
-      })
-      page.drawLine({
-        start: { x: mmToPt(centerX), y: mmToPt(pageHeightMm - (shoulderY - 5)) },
-        end: { x: mmToPt(centerX + shoulderHalf), y: mmToPt(pageHeightMm - shoulderY) },
-        thickness: mmToPt(0.4),
-        color: frameColor,
-      })
-      page.drawLine({
-        start: { x: mmToPt(centerX - shoulderHalf + 2), y: mmToPt(pageHeightMm - (shoulderY + 2.5)) },
-        end: { x: mmToPt(centerX + shoulderHalf - 2), y: mmToPt(pageHeightMm - (shoulderY + 2.5)) },
-        thickness: mmToPt(0.25),
-        color: frameColor,
+      const shoulderCurvePath = [
+        `M ${centerX - shoulderHalf} ${shoulderY}`,
+        `Q ${centerX} ${shoulderY - 5} ${centerX + shoulderHalf} ${shoulderY}`,
+      ].join(' ')
+      page.drawSvgPath(shoulderCurvePath, {
+        x: 0,
+        y: mmToPt(pageHeightMm),
+        scale: mmScale,
+        borderColor: frameColor,
+        borderWidth: toScaledPathStrokeWidth(ACTOR_SHOULDER_STROKE_MM),
       })
 
       page.drawCircle({

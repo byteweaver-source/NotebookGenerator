@@ -1,6 +1,6 @@
 import { rgb, type PDFPage } from 'pdf-lib'
 import type { MmRect } from '../types'
-import { mmToPt } from './utils'
+import { mmToPt, roundedRectPath } from './utils'
 
 const lineColor = rgb(0.78, 0.8, 0.84)
 const darkColor = rgb(0.55, 0.58, 0.64)
@@ -15,11 +15,11 @@ export function drawUiTemplatePdf(page: PDFPage, template: 'uiMobile' | 'uiDeskt
       width: rect.width * 0.6,
       height: rect.height - 16,
     }
-    page.drawRectangle({
+    page.drawSvgPath(roundedRectPath(phone.width, phone.height, 3), {
       x: mmToPt(phone.x),
-      y: mmToPt(pageHeightMm - phone.y - phone.height),
-      width: mmToPt(phone.width),
-      height: mmToPt(phone.height),
+      y: mmToPt(pageHeightMm - phone.y),
+      scale: mmToPt(1),
+      color: rgb(1, 1, 1),
       borderColor: darkColor,
       borderWidth: mmToPt(0.5),
     })
@@ -50,11 +50,11 @@ export function drawUiTemplatePdf(page: PDFPage, template: 'uiMobile' | 'uiDeskt
       width: rect.width - 8,
       height: rect.height - 12,
     }
-    page.drawRectangle({
+    page.drawSvgPath(roundedRectPath(frame.width, frame.height, 2), {
       x: mmToPt(frame.x),
-      y: mmToPt(pageHeightMm - frame.y - frame.height),
-      width: mmToPt(frame.width),
-      height: mmToPt(frame.height),
+      y: mmToPt(pageHeightMm - frame.y),
+      scale: mmToPt(1),
+      color: rgb(1, 1, 1),
       borderColor: darkColor,
       borderWidth: mmToPt(0.45),
     })
