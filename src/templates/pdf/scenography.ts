@@ -78,6 +78,7 @@ export function drawScenographyTemplatePdf(
   options?: ScenographyRenderOptions,
 ): void {
   const pageHeightMm = page.getSize().height / 2.8346456693
+  const mmScale = mmToPt(1)
   const drawDialogHeaderLine = (rowX: number, topY: number, rowWidth: number) => {
     const headerY = topY + 5.2
     const headerLineStartX = rowX + 22
@@ -207,7 +208,8 @@ export function drawScenographyTemplatePdf(
 
       page.drawSvgPath(balloonPath, {
         x: mmToPt(x),
-        y: mmToPt(pageHeightMm - y - height),
+        y: mmToPt(pageHeightMm - y),
+        scale: mmScale,
         color: fillColor,
         borderColor: frameColor,
         borderWidth: mmToPt(0.45),
@@ -387,7 +389,8 @@ export function drawScenographyTemplatePdf(
 
       page.drawSvgPath(balloonPath, {
         x: mmToPt(x),
-        y: mmToPt(pageHeightMm - y - height),
+        y: mmToPt(pageHeightMm - y),
+        scale: mmScale,
         color: fillColor,
         borderColor: frameColor,
         borderWidth: mmToPt(0.45),
