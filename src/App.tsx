@@ -19,10 +19,9 @@ import { PageQuickActionsRail } from './components/preview/PageQuickActionsRail'
 import { PageQuickIndexBadge } from './components/preview/PageQuickIndexBadge'
 import { GroupCard } from './components/ui/GroupCard'
 import { ToolbarCard } from './components/ui/ToolbarCard'
-import { ModalShell } from './components/ui/ModalShell'
 import { ExportDock } from './components/ui/ExportDock'
-import { ParametricDialogContent } from './components/ui/ParametricDialogContent'
-import { ElementLibraryContent } from './components/ui/ElementLibraryContent'
+import { ParametricDialogModal } from './components/modals/ParametricDialogModal'
+import { ElementLibraryModal } from './components/modals/ElementLibraryModal'
 
 const dialoghiRowCounts: Partial<Record<TemplateKey, number>> = {
   dialoghi2: 2,
@@ -2347,45 +2346,32 @@ function App() {
         />
       </section>
 
-      {activeTemplate === 'dialoghiParametric' && parametricModalOpen && (
-        <ModalShell
-          title="Dialoghi Parametrico"
-          ariaLabel="Impostazioni dialoghi parametrici"
-          onClose={() => setParametricModalOpen(false)}
-        >
-          <ParametricDialogContent
-            actorCount={dialoghiParametricActorCount}
-            actors={dialoghiParametricActors}
-            onActorCountChange={setDialoghiParametricActorsCount}
-            onActorColorChange={setDialoghiParametricActorColor}
-          />
-        </ModalShell>
-      )}
+      <ParametricDialogModal
+        open={activeTemplate === 'dialoghiParametric' && parametricModalOpen}
+        actorCount={dialoghiParametricActorCount}
+        actors={dialoghiParametricActors}
+        onClose={() => setParametricModalOpen(false)}
+        onActorCountChange={setDialoghiParametricActorsCount}
+        onActorColorChange={setDialoghiParametricActorColor}
+      />
 
-      {elementLibraryOpen && canDragElements && (
-        <ModalShell
-          title="Libreria elementi"
-          ariaLabel="Libreria elementi custom"
-          className="elementLibraryModal"
-          onClose={() => setElementLibraryOpen(false)}
-        >
-          <ElementLibraryContent
-            categories={elementLibraryTree}
-            selectedCategory={elementLibraryCategory}
-            onSelectCategory={(categoryId) => setElementLibraryCategory(categoryId as ElementLibraryCategory)}
-            query={elementLibraryQuery}
-            onQueryChange={setElementLibraryQuery}
-            items={filteredElementLibraryItems}
-            onSelectItem={(itemId) => {
-              const selectedItem = filteredElementLibraryItems.find((item) => item.id === itemId)
-              if (!selectedItem) {
-                return
-              }
-              handleSelectElementLibraryItem(selectedItem)
-            }}
-          />
-        </ModalShell>
-      )}
+      <ElementLibraryModal
+        open={elementLibraryOpen && canDragElements}
+        categories={elementLibraryTree}
+        selectedCategory={elementLibraryCategory}
+        onSelectCategory={(categoryId) => setElementLibraryCategory(categoryId as ElementLibraryCategory)}
+        query={elementLibraryQuery}
+        onQueryChange={setElementLibraryQuery}
+        items={filteredElementLibraryItems}
+        onSelectItem={(itemId) => {
+          const selectedItem = filteredElementLibraryItems.find((item) => item.id === itemId)
+          if (!selectedItem) {
+            return
+          }
+          handleSelectElementLibraryItem(selectedItem)
+        }}
+        onClose={() => setElementLibraryOpen(false)}
+      />
     </main>
   )
 }
