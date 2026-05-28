@@ -78,6 +78,17 @@ export function drawScenographyTemplatePdf(
   options?: ScenographyRenderOptions,
 ): void {
   const pageHeightMm = page.getSize().height / 2.8346456693
+  const drawDialogHeaderLine = (rowX: number, topY: number, rowWidth: number) => {
+    const headerY = topY + 5.2
+    const headerLineStartX = rowX + 22
+    const headerLineEndX = rowX + rowWidth - 4
+    page.drawLine({
+      start: { x: mmToPt(headerLineStartX), y: mmToPt(pageHeightMm - headerY) },
+      end: { x: mmToPt(headerLineEndX), y: mmToPt(pageHeightMm - headerY) },
+      thickness: mmToPt(0.32),
+      color: frameColor,
+    })
+  }
 
   if (template in dialoghiRowCounts) {
     const rowCount = dialoghiRowCounts[template as keyof typeof dialoghiRowCounts]
@@ -88,6 +99,10 @@ export function drawScenographyTemplatePdf(
     const actorWidth = 34
     const actorPadding = 2.5
     const balloonGap = 4
+    const rowX = rect.x + outerPaddingX
+    const rowWidth = rect.width - outerPaddingX * 2
+
+    drawDialogHeaderLine(rowX, rect.y, rowWidth)
 
     const drawActor = (x: number, y: number) => {
       const centerX = x + actorWidth / 2
@@ -247,6 +262,10 @@ export function drawScenographyTemplatePdf(
     const actorWidth = 34
     const actorPadding = 2.5
     const balloonGap = 4
+    const rowX = rect.x + outerPaddingX
+    const rowWidth = rect.width - outerPaddingX * 2
+
+    drawDialogHeaderLine(rowX, rect.y, rowWidth)
 
     const drawActor = (x: number, y: number, actorColor: string) => {
       const centerX = x + actorWidth / 2

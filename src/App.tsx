@@ -1691,9 +1691,20 @@ function App() {
                 const actorPadding = 2.5
                 const balloonGap = 4
                 const actorColors = dialoghiParametricActors.map((actor) => actor.color)
+                const headerY = previewContent.y + 5.2
+                const headerLineStartX = previewContent.x + outerPaddingX + 22
+                const headerLineEndX =
+                  previewContent.x + previewContent.width - outerPaddingX - 4
 
                 return (
                   <>
+                    <line
+                      x1={headerLineStartX}
+                      y1={headerY}
+                      x2={headerLineEndX}
+                      y2={headerY}
+                      strokeWidth="0.32"
+                    />
                     {Array.from({ length: rowCount }, (_, i) => {
                       const rowY = previewContent.y + outerPaddingY + i * (rowHeight + rowGap)
                       const alignRight = i % 2 === 1
