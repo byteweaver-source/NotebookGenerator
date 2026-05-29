@@ -62,7 +62,23 @@ type HeaderFooterOptions = {
   align: TextAlignOption
 }
 
+type NotebookProjectV1 = {
+  version: 1
+  size: PageSizeKey
+  orientation: Orientation
+  binding: BindingKey
+  duplexEnabled: boolean
+  compositionPages: PlannedPage[]
+  previewPageNumber: number
+  headerOptions: HeaderFooterOptions
+  footerOptions: HeaderFooterOptions
+  dialoghiParametricActorCount: number
+  dialoghiParametricActorColors: string[]
+  customElementsByPage: Record<string, CustomElement[]>
+}
+
 const MM_TO_PT = 2.8346456693
+const NOTEBOOK_PROJECT_JSON_VERSION = 1
 
 const pageSizes: Record<PageSizeKey, { width: number; height: number }> = {
   A4: { width: 210, height: 297 },
@@ -152,6 +168,171 @@ const dialoghiParametricDefaultColors = [
   '#b56576',
   '#577590',
 ]
+
+const elementKinds: ElementKind[] = ['phone', 'browser', 'card', 'form']
+const textAlignOptions: TextAlignOption[] = ['left', 'center', 'right', 'distributed']
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+function asTextAlignOption(value: unknown, fallback: TextAlignOption): TextAlignOption {
+  return typeof value === 'string' && textAlignOptions.includes(value as TextAlignOption)
+    ? (value as TextAlignOption)
+    : fallback
+}
+
+function asHeaderFooterOptions(value: unknown, fallback: HeaderFooterOptions): HeaderFooterOptions {
+  if (!isRecord(value)) {
+    return fallback
+  }
+
+  return {
+    text: typeof value.text === 'string' ? value.text : fallback.text,
+    includePageNumber:
+      typeof value.includePageNumber === 'boolean'
+        ? value.includePageNumber
+        : fallback.includePageNumber,
+    align: asTextAlignOption(value.align, fallback.align),
+  }
+}
+
+function isTemplateKey(value: unknown): value is TemplateKey {
+  return typeof value === 'string' && Object.hasOwn(templateLabels, value)
+}
+
+function sanitizeCustomElementsByPage(value: unknown): Record<string, CustomElement[]> {
+  if (!isRecord(value)) {
+    return {}
+  }
+
+  const next: Record<string, CustomElement[]> = {}
+  for (const [pageKey, pageElementsRaw] of Object.entries(value)) {
+    if (typeof pageKey !== 'string' || !Array.isArray(pageElementsRaw)) {
+      continue
+    }
+
+    const parsedElements: CustomElement[] = []
+    for (const elementRaw of pageElementsRaw) {
+      if (!isRecord(elementRaw)) {
+        continue
+      }
+
+      const kind = elementKinds.includes(elementRaw.kind as ElementKind)
+        ? (elementRaw.kind as ElementKind)
+        : 'card'
+      const width = isFiniteNumber(elementRaw.width) && elementRaw.width > 0 ? elementRaw.width : 62
+      const height = isFiniteNumber(elementRaw.height) && elementRaw.height > 0 ? elementRaw.height : 44
+      const x = isFiniteNumber(elementRaw.x) ? elementRaw.x : 0
+      const y = isFiniteNumber(elementRaw.y) ? elementRaw.y : 0
+
+      parsedElements.push({
+        id: typeof elementRaw.id === 'string' && elementRaw.id.trim().length > 0
+          ? elementRaw.id
+          : crypto.randomUUID(),
+        kind,
+        x,
+        y,
+        width,
+        height,
+        assetDataUrl:
+          typeof elementRaw.assetDataUrl === 'string' && elementRaw.assetDataUrl.trim().length > 0
+            ? elementRaw.assetDataUrl
+            : undefined,
+        assetName:
+          typeof elementRaw.assetName === 'string' && elementRaw.assetName.trim().length > 0
+            ? elementRaw.assetName
+            : undefined,
+      })
+    }
+
+    if (parsedElements.length > 0) {
+      next[pageKey] = parsedElements
+    }
+  }
+
+  return next
+}
+
+function parseNotebookProject(value: unknown): NotebookProjectV1 | null {
+  if (!isRecord(value) || value.version !== NOTEBOOK_PROJECT_JSON_VERSION) {
+    return null
+  }
+
+  const size: PageSizeKey = value.size === 'A5' ? 'A5' : 'A4'
+  const orientation: Orientation = value.orientation === 'landscape' ? 'landscape' : 'portrait'
+  const binding: BindingKey =
+    value.binding === 'none' || value.binding === 'ringTop' || value.binding === 'booklet'
+      ? value.binding
+      : 'ringLeft'
+  const duplexEnabled = Boolean(value.duplexEnabled)
+
+  const compositionPagesRaw = Array.isArray(value.compositionPages) ? value.compositionPages : []
+  const compositionPages: PlannedPage[] = compositionPagesRaw
+    .filter((item) => isRecord(item) && isTemplateKey(item.template))
+    .map((item) => ({
+      id: typeof item.id === 'string' && item.id.trim().length > 0 ? item.id : crypto.randomUUID(),
+      template: item.template as TemplateKey,
+    }))
+
+  const safeCompositionPages = compositionPages.length > 0
+    ? compositionPages
+    : [{ id: crypto.randomUUID(), template: 'blank' as TemplateKey }]
+
+  const previewPageNumberRaw = isFiniteNumber(value.previewPageNumber) ? Math.round(value.previewPageNumber) : 1
+  const previewPageNumber = Math.min(
+    Math.max(previewPageNumberRaw, 1),
+    safeCompositionPages.length,
+  )
+
+  const headerOptions = asHeaderFooterOptions(value.headerOptions, {
+    text: '',
+    includePageNumber: false,
+    align: 'left',
+  })
+  const footerOptions = asHeaderFooterOptions(value.footerOptions, {
+    text: '{page}',
+    includePageNumber: false,
+    align: 'right',
+  })
+
+  const colorsRaw = Array.isArray(value.dialoghiParametricActorColors)
+    ? value.dialoghiParametricActorColors
+    : []
+  const sanitizedColors = colorsRaw
+    .filter((color) => typeof color === 'string' && color.trim().length > 0)
+    .map((color) => color.trim())
+
+  const actorCountSource = isFiniteNumber(value.dialoghiParametricActorCount)
+    ? Math.round(value.dialoghiParametricActorCount)
+    : sanitizedColors.length || 3
+  const dialoghiParametricActorCount = Math.min(8, Math.max(2, actorCountSource))
+  const dialoghiParametricActorColors = buildDialoghiParametricColors(
+    dialoghiParametricActorCount,
+    sanitizedColors,
+  )
+
+  const customElementsByPage = sanitizeCustomElementsByPage(value.customElementsByPage)
+
+  return {
+    version: NOTEBOOK_PROJECT_JSON_VERSION,
+    size,
+    orientation,
+    binding,
+    duplexEnabled,
+    compositionPages: safeCompositionPages,
+    previewPageNumber,
+    headerOptions,
+    footerOptions,
+    dialoghiParametricActorCount,
+    dialoghiParametricActorColors,
+    customElementsByPage,
+  }
+}
 
 function buildDialoghiParametricColors(actorCount: number, existing: string[] = []): string[] {
   const safeCount = Math.min(8, Math.max(2, actorCount))
@@ -660,6 +841,7 @@ function App() {
 
   const svgRef = useRef<SVGSVGElement | null>(null)
   const uploadSvgInputRef = useRef<HTMLInputElement | null>(null)
+  const importProjectInputRef = useRef<HTMLInputElement | null>(null)
   const pageActionMenuRef = useRef<HTMLDivElement | null>(null)
 
   const page = useMemo(() => getPageDimensions(size, orientation), [size, orientation])
@@ -1025,6 +1207,75 @@ function App() {
     })
   }
 
+  function handleExportProjectJson() {
+    const payload: NotebookProjectV1 = {
+      version: NOTEBOOK_PROJECT_JSON_VERSION,
+      size,
+      orientation,
+      binding,
+      duplexEnabled,
+      compositionPages,
+      previewPageNumber: clampedPreviewPageNumber,
+      headerOptions,
+      footerOptions,
+      dialoghiParametricActorCount,
+      dialoghiParametricActorColors,
+      customElementsByPage,
+    }
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: 'application/json',
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'notebook-project.json'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function handleImportProjectJson(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) {
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const rawText = typeof reader.result === 'string' ? reader.result : ''
+        const parsed = JSON.parse(rawText)
+        const project = parseNotebookProject(parsed)
+        if (!project) {
+          window.alert('JSON progetto non valido o versione non supportata.')
+          return
+        }
+
+        setSize(project.size)
+        setOrientation(project.orientation)
+        setBinding(project.binding)
+        setDuplexEnabled(project.duplexEnabled)
+        setCompositionPages(project.compositionPages)
+        setPreviewPageNumber(project.previewPageNumber)
+        setHeaderOptions(project.headerOptions)
+        setFooterOptions(project.footerOptions)
+        setDialoghiParametricActorCount(project.dialoghiParametricActorCount)
+        setDialoghiParametricActorColors(project.dialoghiParametricActorColors)
+        setCustomElementsByPage(project.customElementsByPage)
+
+        setSelectedId(null)
+        setDragState(null)
+        setPageActionMenuOpen(false)
+        setElementLibraryOpen(false)
+      } catch {
+        window.alert('Impossibile leggere il file JSON progetto.')
+      }
+    }
+
+    reader.readAsText(file)
+    event.target.value = ''
+  }
+
   function runPageMenuAction(action: () => void) {
     action()
     setPageActionMenuOpen(false)
@@ -1276,6 +1527,26 @@ function App() {
           />
         </GroupCard>
 
+        <GroupCard title="Notebook personalizzato">
+          <div className="toolbarTheme">
+            <button
+              type="button"
+              className="smallButton"
+              onClick={handleExportProjectJson}
+            >
+              Esporta progetto JSON
+            </button>
+            <button
+              type="button"
+              className="smallButton"
+              onClick={() => importProjectInputRef.current?.click()}
+            >
+              Importa progetto JSON
+            </button>
+          </div>
+          <p className="hint">Condividi il file JSON per riaprire lo stesso notebook su un altro PC.</p>
+        </GroupCard>
+
         <p className="hint">
           Area utile: {Math.round(previewContent.width)} x {Math.round(previewContent.height)} mm
         </p>
@@ -1336,6 +1607,13 @@ function App() {
           type="file"
           accept=".svg,image/svg+xml"
           onChange={handleSvgUpload}
+        />
+        <input
+          ref={importProjectInputRef}
+          className="hiddenFileInput"
+          type="file"
+          accept=".json,application/json"
+          onChange={handleImportProjectJson}
         />
 
         <div className="previewStage">
