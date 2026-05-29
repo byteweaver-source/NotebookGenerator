@@ -41,6 +41,7 @@ type CustomElement = {
   y: number
   width: number
   height: number
+  rotation?: number
   assetDataUrl?: string
   assetName?: string
 }
@@ -49,6 +50,22 @@ type DragState = {
   id: string
   pointerOffsetX: number
   pointerOffsetY: number
+}
+
+type ResizeState = {
+  id: string
+  startPointerX: number
+  startPointerY: number
+  startWidth: number
+  startHeight: number
+}
+
+type RotationState = {
+  id: string
+  centerX: number
+  centerY: number
+  startRotation: number
+  startPointerAngle: number
 }
 
 type PlannedPage = {
@@ -79,6 +96,7 @@ type NotebookProjectV1 = {
 
 const MM_TO_PT = 2.8346456693
 const NOTEBOOK_PROJECT_JSON_VERSION = 1
+const MIN_CUSTOM_ELEMENT_SIZE = 18
 
 const pageSizes: Record<PageSizeKey, { width: number; height: number }> = {
   A4: { width: 210, height: 297 },
@@ -239,6 +257,9 @@ function sanitizeCustomElementsByPage(value: unknown): Record<string, CustomElem
         y,
         width,
         height,
+        rotation: isFiniteNumber(elementRaw.rotation)
+          ? normalizeRotationDeg(elementRaw.rotation)
+          : 0,
         assetDataUrl:
           typeof elementRaw.assetDataUrl === 'string' && elementRaw.assetDataUrl.trim().length > 0
             ? elementRaw.assetDataUrl
@@ -464,6 +485,36 @@ function clampElementToContent(element: CustomElement, content: MmRect): CustomE
     x: Math.min(Math.max(element.x, content.x), content.x + content.width - element.width),
     y: Math.min(Math.max(element.y, content.y), content.y + content.height - element.height),
   }
+}
+
+function clampElementSizeToContent(
+  element: CustomElement,
+  content: MmRect,
+  nextWidth: number,
+  nextHeight: number,
+): { width: number; height: number } {
+  const maxWidth = Math.max(MIN_CUSTOM_ELEMENT_SIZE, content.x + content.width - element.x)
+  const maxHeight = Math.max(MIN_CUSTOM_ELEMENT_SIZE, content.y + content.height - element.y)
+
+  return {
+    width: Math.min(Math.max(nextWidth, MIN_CUSTOM_ELEMENT_SIZE), maxWidth),
+    height: Math.min(Math.max(nextHeight, MIN_CUSTOM_ELEMENT_SIZE), maxHeight),
+  }
+}
+
+function normalizeRotationDeg(angle: number): number {
+  let value = angle % 360
+  if (value > 180) {
+    value -= 360
+  }
+  if (value < -180) {
+    value += 360
+  }
+  return value
+}
+
+function angleDegFromCenter(centerX: number, centerY: number, x: number, y: number): number {
+  return (Math.atan2(y - centerY, x - centerX) * 180) / Math.PI
 }
 
 function drawBindingGuides(
@@ -831,6 +882,8 @@ function App() {
   const [customElementsByPage, setCustomElementsByPage] = useState<Record<string, CustomElement[]>>({})
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [dragState, setDragState] = useState<DragState | null>(null)
+  const [resizeState, setResizeState] = useState<ResizeState | null>(null)
+  const [rotationState, setRotationState] = useState<RotationState | null>(null)
   const [projectPanelOpenMobile, setProjectPanelOpenMobile] = useState(false)
   const [parametricModalOpen, setParametricModalOpen] = useState(false)
   const [pageActionMenuOpen, setPageActionMenuOpen] = useState(false)
@@ -1010,6 +1063,7 @@ function App() {
       kind,
       width: preset.width,
       height: preset.height,
+      rotation: 0,
       x: previewContent.x + (previewContent.width - preset.width) / 2 + currentCustomElements.length * 2,
       y: previewContent.y + (previewContent.height - preset.height) / 2 + currentCustomElements.length * 2,
     }
@@ -1028,6 +1082,7 @@ function App() {
       kind: 'card',
       width: preset.width,
       height: preset.height,
+      rotation: 0,
       x: previewContent.x + (previewContent.width - preset.width) / 2 + currentCustomElements.length * 2,
       y: previewContent.y + (previewContent.height - preset.height) / 2 + currentCustomElements.length * 2,
       assetDataUrl: dataUrl,
@@ -1074,12 +1129,73 @@ function App() {
   }
 
   function handlePointerMove(event: ReactPointerEvent<SVGSVGElement>) {
-    if (!dragState || !svgRef.current) {
+    if (!svgRef.current) {
       return
     }
 
     const point = screenPointToSvg(event, svgRef.current)
     if (!point) {
+      return
+    }
+
+    if (resizeState) {
+      setCustomElementsByPage((prev) => {
+        const current = prev[currentPageKey] ?? []
+        return {
+          ...prev,
+          [currentPageKey]: current.map((item) => {
+            if (item.id !== resizeState.id) {
+              return item
+            }
+
+            const nextWidth = resizeState.startWidth + (point.x - resizeState.startPointerX)
+            const nextHeight = resizeState.startHeight + (point.y - resizeState.startPointerY)
+            const size = clampElementSizeToContent(item, previewContent, nextWidth, nextHeight)
+
+            return {
+              ...item,
+              width: size.width,
+              height: size.height,
+            }
+          }),
+        }
+      })
+      return
+    }
+
+    if (rotationState) {
+      setCustomElementsByPage((prev) => {
+        const current = prev[currentPageKey] ?? []
+        return {
+          ...prev,
+          [currentPageKey]: current.map((item) => {
+            if (item.id !== rotationState.id) {
+              return item
+            }
+
+            const pointerAngle = angleDegFromCenter(
+              rotationState.centerX,
+              rotationState.centerY,
+              point.x,
+              point.y,
+            )
+            const delta = pointerAngle - rotationState.startPointerAngle
+            const freeAngle = rotationState.startRotation + delta
+            const nextRotation = event.shiftKey
+              ? Math.round(freeAngle / 45) * 45
+              : freeAngle
+
+            return {
+              ...item,
+              rotation: normalizeRotationDeg(nextRotation),
+            }
+          }),
+        }
+      })
+      return
+    }
+
+    if (!dragState) {
       return
     }
 
@@ -1109,6 +1225,12 @@ function App() {
     if (dragState) {
       setDragState(null)
     }
+    if (resizeState) {
+      setResizeState(null)
+    }
+    if (rotationState) {
+      setRotationState(null)
+    }
   }
 
   const canDragElements = activeTemplate === 'uiDesktop' || activeTemplate === 'uiMobile'
@@ -1117,6 +1239,8 @@ function App() {
   useEffect(() => {
     setSelectedId(null)
     setDragState(null)
+    setResizeState(null)
+    setRotationState(null)
   }, [currentPageKey])
 
   useEffect(() => {
@@ -1265,6 +1389,8 @@ function App() {
 
         setSelectedId(null)
         setDragState(null)
+        setResizeState(null)
+        setRotationState(null)
         setPageActionMenuOpen(false)
         setElementLibraryOpen(false)
       } catch {
@@ -1661,7 +1787,7 @@ function App() {
                 <CustomElementShape
                   element={element}
                   selected={selectedId === element.id}
-                  onPointerDown={(event) => {
+                  onPointerDown={(event: ReactPointerEvent<SVGGElement>) => {
                     if (!canDragElements || !svgRef.current) {
                       return
                     }
@@ -1679,6 +1805,56 @@ function App() {
                       pointerOffsetX: point.x - element.x,
                       pointerOffsetY: point.y - element.y,
                     })
+                    setResizeState(null)
+                    setRotationState(null)
+                  }}
+                  onResizePointerDown={(event: ReactPointerEvent<SVGRectElement>) => {
+                    if (!canDragElements || !svgRef.current) {
+                      return
+                    }
+                    event.preventDefault()
+                    event.stopPropagation()
+
+                    const point = screenPointToSvg(event, svgRef.current)
+                    if (!point) {
+                      return
+                    }
+
+                    setSelectedId(element.id)
+                    setResizeState({
+                      id: element.id,
+                      startPointerX: point.x,
+                      startPointerY: point.y,
+                      startWidth: element.width,
+                      startHeight: element.height,
+                    })
+                    setDragState(null)
+                    setRotationState(null)
+                  }}
+                  onRotatePointerDown={(event: ReactPointerEvent<SVGGElement>) => {
+                    if (!canDragElements || !svgRef.current) {
+                      return
+                    }
+                    event.preventDefault()
+                    event.stopPropagation()
+
+                    const point = screenPointToSvg(event, svgRef.current)
+                    if (!point) {
+                      return
+                    }
+
+                    const centerX = element.x + element.width / 2
+                    const centerY = element.y + element.height / 2
+                    setSelectedId(element.id)
+                    setRotationState({
+                      id: element.id,
+                      centerX,
+                      centerY,
+                      startRotation: element.rotation ?? 0,
+                      startPointerAngle: angleDegFromCenter(centerX, centerY, point.x, point.y),
+                    })
+                    setDragState(null)
+                    setResizeState(null)
                   }}
                 />
 
